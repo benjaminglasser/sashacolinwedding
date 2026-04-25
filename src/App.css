@@ -1,0 +1,38 @@
+.page {
+  min-height: 100svh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.hero {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.kicker {
+  text-transform: uppercase;
+  letter-spacing: 0.4em;
+  font-size: 13px;
+  color: var(--text);
+  margin: 0;
+}
+
+.hero h1 {
+  font-family: var(--heading);
+  font-weight: 400;
+  font-size: clamp(56px, 10vw, 120px);
+  letter-spacing: -0.02em;
+  margin: 0;
+  line-height: 1;
+}
+
+.subtitle {
+  font-size: 18px;
+  color: var(--text);
+  margin: 0;
+  font-style: italic;
+}
