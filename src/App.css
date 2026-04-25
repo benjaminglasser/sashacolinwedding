@@ -14,7 +14,7 @@
   left: 0;
   right: 0;
   z-index: 50;
-  padding: 26px clamp(20px, 4vw, 56px) 38px;
+  padding: 26px clamp(32px, 6vw, 88px) 38px;
   pointer-events: none;
   background: linear-gradient(
     to bottom,
@@ -43,7 +43,7 @@
 
 @media (max-width: 640px) {
   .header {
-    padding: 18px clamp(16px, 6vw, 28px) 28px;
+    padding: 18px clamp(24px, 8vw, 44px) 28px;
   }
 
   .header__list {
@@ -273,5 +273,228 @@
   .intro--leaving {
     transition: opacity 200ms ease;
     transform: none;
+  }
+}
+
+/* Modal
+   ------------------------------------------------------------------ */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(12, 8, 20, 0.55);
+  opacity: 0;
+  z-index: 55;
+  pointer-events: auto;
+  animation: backdropFadeIn 380ms ease-out 540ms both;
+}
+
+.modal-card {
+  --emerge-y: 50%;
+  position: fixed;
+  top: var(--emerge-y);
+  left: 50%;
+  width: clamp(420px, 56vw, 620px);
+  max-height: calc(100svh - 80px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 40px 44px;
+  background: #fbf6ec;
+  color: #1a1420;
+  border: 1px solid rgba(12, 8, 20, 0.08);
+  border-radius: 18px;
+  box-shadow:
+    0 32px 80px rgba(12, 8, 20, 0.45),
+    0 4px 16px rgba(12, 8, 20, 0.25);
+  pointer-events: auto;
+  transform: translate(-50%, -50%) scale(0.1);
+  opacity: 0;
+  z-index: 1;
+  animation: modalEmerge 950ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+.modal-title {
+  margin: 0 0 18px;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: clamp(28px, 3.4vw, 44px);
+  line-height: 1.05;
+  letter-spacing: 0.01em;
+  color: #08060d;
+}
+
+.modal-body {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: clamp(15px, 1.05vw, 17px);
+  line-height: 1.6;
+  color: #3b3344;
+}
+
+.modal-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  appearance: none;
+  background: transparent;
+  border: 0;
+  border-radius: 50%;
+  font-family: var(--sans);
+  font-size: 28px;
+  line-height: 1;
+  color: #6b6375;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: color 180ms ease, background 180ms ease;
+}
+
+.modal-close:hover,
+.modal-close:focus-visible {
+  color: #08060d;
+  background: rgba(12, 8, 20, 0.08);
+  outline: none;
+}
+
+@keyframes backdropFadeIn {
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes backdropFadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes modalEmerge {
+  0% {
+    z-index: 1;
+    top: var(--emerge-y);
+    transform: translate(-50%, -50%) scale(0.1);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  60% {
+    z-index: 1;
+  }
+  61% {
+    z-index: 60;
+  }
+  100% {
+    z-index: 60;
+    top: 50%;
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes modalRetreat {
+  0% {
+    z-index: 60;
+    top: 50%;
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+  39% {
+    z-index: 60;
+  }
+  40% {
+    z-index: 1;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    z-index: 1;
+    top: var(--emerge-y);
+    transform: translate(-50%, -50%) scale(0.1);
+    opacity: 0;
+  }
+}
+
+.modal-card--closing {
+  animation: modalRetreat 750ms cubic-bezier(0.5, 0, 0.75, 0.6) both;
+}
+
+.modal-backdrop--closing {
+  animation: backdropFadeOut 280ms ease-in both;
+}
+
+/* Tablet / iPad portrait + iPad landscape (4:3 doesn't trigger the wide
+   asset breakpoint at 3:2). */
+@media (max-width: 1023px) {
+  .modal-card {
+    width: min(82vw, 540px);
+    padding: 36px 32px;
+  }
+}
+
+/* Portrait small screens: anchor the emergence inside the arch (which sits
+   low in the viewport when object-fit: contain is anchored bottom-center). */
+@media (max-width: 1023px) and (orientation: portrait) {
+  .modal-card {
+    --emerge-y: 72%;
+  }
+}
+
+/* Phone breakpoint, matching the existing header column layout. */
+@media (max-width: 640px) {
+  .modal-card {
+    width: min(92vw, 480px);
+    padding: 28px 22px 32px;
+    max-height: calc(100svh - 32px);
+    border-radius: 14px;
+  }
+  .modal-title {
+    font-size: 32px;
+  }
+  .modal-body {
+    font-size: 15px;
+  }
+  .modal-close {
+    top: 8px;
+    right: 8px;
+  }
+}
+
+/* Short viewport guard (e.g. phones in landscape). */
+@media (max-height: 480px) {
+  .modal-card {
+    padding: 22px 24px;
+    max-height: calc(100svh - 24px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal-backdrop {
+    animation: none;
+    opacity: 1;
+    transition: opacity 180ms ease;
+  }
+  .modal-backdrop--closing {
+    animation: none;
+    opacity: 0;
+  }
+  .modal-card {
+    animation: none;
+    opacity: 1;
+    top: 50%;
+    transform: translate(-50%, -50%) scale(1);
+    z-index: 60;
+    transition: opacity 200ms ease;
+  }
+  .modal-card--closing {
+    animation: none;
+    opacity: 0;
   }
 }

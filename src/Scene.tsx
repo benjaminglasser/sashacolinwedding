@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import type { CSSProperties } from 'react'
+import { Modal } from './Modal'
 
 type Layer = {
   src: string
@@ -41,7 +42,12 @@ const LAYERS: Layer[] = [
 const STAGGER_MS = 120
 const ENTRANCE_DELAY_MS = 150
 
-export function Scene() {
+type Props = {
+  activeLink: string | null
+  onClose: () => void
+}
+
+export function Scene({ activeLink, onClose }: Props) {
   const stageRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
@@ -125,6 +131,7 @@ export function Scene() {
           </div>
         )
       })}
+      {activeLink && <Modal label={activeLink} onClose={onClose} />}
     </div>
   )
 }

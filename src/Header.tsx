@@ -6,7 +6,11 @@ const LINKS = [
   { label: 'Questions', href: '#questions' },
 ]
 
-export function Header() {
+type Props = {
+  onOpen: (label: string) => void
+}
+
+export function Header({ onOpen }: Props) {
   return (
     <header className="header" aria-label="Site navigation">
       <nav className="header__nav">
@@ -16,7 +20,10 @@ export function Header() {
               <a
                 className="header__link"
                 href={link.href}
-                onClick={(event) => event.preventDefault()}
+                onClick={(event) => {
+                  event.preventDefault()
+                  onOpen(link.label)
+                }}
               >
                 {link.label}
               </a>

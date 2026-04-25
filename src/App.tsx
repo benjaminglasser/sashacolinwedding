@@ -9,6 +9,7 @@ const INTRO_FADE_MS = 800
 function App() {
   const [hasEntered, setHasEntered] = useState(false)
   const [introMounted, setIntroMounted] = useState(true)
+  const [activeLink, setActiveLink] = useState<string | null>(null)
 
   const handleEnter = () => {
     setHasEntered(true)
@@ -17,8 +18,8 @@ function App() {
 
   return (
     <main className="page">
-      {hasEntered && <Scene />}
-      {hasEntered && <Header />}
+      {hasEntered && <Scene activeLink={activeLink} onClose={() => setActiveLink(null)} />}
+      {hasEntered && <Header onOpen={setActiveLink} />}
       {introMounted && <IntroOverlay onEnter={handleEnter} />}
     </main>
   )
