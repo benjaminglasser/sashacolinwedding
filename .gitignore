@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Playwright/MCP test artifacts
+.playwright-mcp/
+# Top-level scratch screenshots (keep nested ones in public/)
+/*.png
