@@ -1,7 +1,12 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
+import type { ModalOrigin } from './Header'
 
 type Props = {
   label: string
+  /** Viewport-space center of the link that opened this modal. We use it
+   *  to anchor the open/close animations so the card grows out of that
+   *  spot rather than zooming in from the background. */
+  origin: ModalOrigin | null
   onClose: () => void
 }
 
@@ -41,7 +46,36 @@ const SCHEDULE: ScheduleDay[] = [
 
 const CLOSE_ANIMATION_MS = 750
 
-export function Modal({ label, onClose }: Props) {
+/**
+ * Sparkles scatter across the card while it materializes. Positions are
+ * percentages of the card's width/height, delays are in ms, sizes in px,
+ * and `peak` is the maximum scale each sparkle reaches at its mid-flash.
+ *
+ * Hand-tuned (vs. randomized) so the constellation feels designed and
+ * doesn't accidentally cluster around the title text on any open.
+ */
+type SparkleSpec = { x: number; y: number; delay: number; size: number; peak: number }
+const SPARKLES: SparkleSpec[] = [
+  { x: 14, y: 22, delay: 220, size: 11, peak: 1.4 },
+  { x: 86, y: 18, delay: 100, size: 13, peak: 1.5 },
+  { x: 28, y: 64, delay: 480, size: 7, peak: 1.0 },
+  { x: 72, y: 76, delay: 380, size: 11, peak: 1.3 },
+  { x: 52, y: 8, delay: 280, size: 9, peak: 1.2 },
+  { x: 18, y: 88, delay: 620, size: 12, peak: 1.4 },
+  { x: 92, y: 52, delay: 540, size: 8, peak: 1.1 },
+  { x: 8, y: 46, delay: 760, size: 10, peak: 1.3 },
+  { x: 62, y: 38, delay: 160, size: 8, peak: 1.2 },
+  { x: 42, y: 92, delay: 660, size: 12, peak: 1.4 },
+  { x: 80, y: 30, delay: 880, size: 7, peak: 1.0 },
+  { x: 32, y: 14, delay: 1020, size: 9, peak: 1.2 },
+]
+
+/** Inline 4-point sparkle star. Drawn with concave sides so it reads as a
+ *  classic "twinkle" rather than a rotating cross. */
+const SPARKLE_PATH =
+  'M12 1.5 L13.3 10.7 L22.5 12 L13.3 13.3 L12 22.5 L10.7 13.3 L1.5 12 L10.7 10.7 Z'
+
+export function Modal({ label, origin, onClose }: Props) {
   const closeRef = useRef<HTMLButtonElement | null>(null)
   const [closing, setClosing] = useState(false)
 
@@ -63,6 +97,19 @@ export function Modal({ label, onClose }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Compute the offset from viewport center -> origin click point so the
+  // card's grow animation can anchor at the clicked link. Memoized so a
+  // window resize mid-animation doesn't shift the start position.
+  const stageStyle = useMemo<CSSProperties>(() => {
+    const targetX = window.innerWidth / 2
+    const targetY = window.innerHeight / 2
+    const safe = origin ?? { x: targetX, y: targetY }
+    return {
+      '--dx': `${safe.x - targetX}px`,
+      '--dy': `${safe.y - targetY}px`,
+    } as CSSProperties
+  }, [origin])
+
   const isLookBook = label === 'Look Book'
   const cardClass = `modal-card${isLookBook ? ' modal-card--lookbook' : ''}${
     closing ? ' modal-card--closing' : ''
@@ -70,7 +117,7 @@ export function Modal({ label, onClose }: Props) {
   const backdropClass = `modal-backdrop${closing ? ' modal-backdrop--closing' : ''}`
 
   return (
-    <>
+    <div className="modal-stage" style={stageStyle}>
       <div className={backdropClass} onClick={requestClose} aria-hidden="true" />
       <div
         className={cardClass}
@@ -78,6 +125,32 @@ export function Modal({ label, onClose }: Props) {
         aria-modal="true"
         aria-label={label}
       >
+        {/* Sparkles flicker across the card as it materializes. Rendered
+            first so they sit under the close button / content in source
+            order but above them visually via z-index. */}
+        {!closing && (
+          <div className="modal-sparkles" aria-hidden="true">
+            {SPARKLES.map((s, i) => (
+              <span
+                key={i}
+                className="modal-sparkle"
+                style={
+                  {
+                    '--x': `${s.x}%`,
+                    '--y': `${s.y}%`,
+                    '--delay': `${s.delay}ms`,
+                    '--size': `${s.size}px`,
+                    '--peak': s.peak,
+                  } as CSSProperties
+                }
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path d={SPARKLE_PATH} />
+                </svg>
+              </span>
+            ))}
+          </div>
+        )}
         <button
           ref={closeRef}
           type="button"
@@ -149,6 +222,6 @@ export function Modal({ label, onClose }: Props) {
           </>
         )}
       </div>
-    </>
+    </div>
   )
 }

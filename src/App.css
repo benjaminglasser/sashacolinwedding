@@ -3,97 +3,132 @@
   min-height: 100svh;
   width: 100vw;
   overflow: hidden;
-  background: #ffffff;
+  background: #fbf2dd;
 }
 
 /* Header
-   ------------------------------------------------------------------ */
+   ------------------------------------------------------------------
+   Single unified design across phone / iPad / desktop: a small,
+   centered parchment cartouche containing all the links. Same
+   parchment + thin gold inset ring as the modal cards so the nav
+   reads as part of the same illuminated invitation. On narrow
+   viewports the link row wraps onto a second line; on wider
+   viewports everything sits inline. */
 .header {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   z-index: 50;
-  padding: 26px clamp(32px, 6vw, 88px) 38px;
+  display: flex;
+  justify-content: center;
+  padding: clamp(14px, 2.4vw, 26px) clamp(8px, 1.5vw, 16px);
   pointer-events: none;
-  background: linear-gradient(
-    to bottom,
-    rgba(12, 8, 20, 0.55) 0%,
-    rgba(12, 8, 20, 0.32) 55%,
-    rgba(12, 8, 20, 0) 100%
-  );
+  opacity: 1;
+  /* `backwards` keeps the header invisible during the 1100ms delay before
+     the intro fade-in animation runs, while leaving the resting opacity
+     as `1` so the modal-open class below can transition it back out. */
+  animation: headerFadeIn 900ms ease-out 1100ms backwards;
+  transition: opacity 320ms ease, transform 320ms ease;
+}
+
+/* While any modal is open we fade the header out so it doesn't compete
+   with the modal for attention. The :not() check means the header
+   starts fading back in the instant the user dismisses the modal, in
+   parallel with the modal's retreat animation, instead of waiting for
+   it to unmount. */
+.page:has(.modal-card:not(.modal-card--closing)) .header {
   opacity: 0;
-  animation: headerFadeIn 900ms ease-out 1100ms forwards;
+  transform: translateY(-6px);
+}
+
+.page:has(.modal-card:not(.modal-card--closing)) .header__link {
+  pointer-events: none;
 }
 
 .header__nav {
-  width: 100%;
+  width: auto;
+  max-width: 100%;
+  padding: 10px clamp(24px, 4vw, 56px);
+  background: rgba(251, 242, 221, 0.82);
+  -webkit-backdrop-filter: blur(14px) saturate(1.1);
+  backdrop-filter: blur(14px) saturate(1.1);
+  border-radius: 18px;
+  box-shadow:
+    inset 0 0 0 1px rgba(184, 138, 71, 0.32),
+    0 6px 20px rgba(20, 10, 30, 0.18);
+  pointer-events: auto;
 }
 
 .header__list {
   display: flex;
-  justify-content: space-between;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
   align-items: center;
-  gap: clamp(12px, 2vw, 32px);
+  gap: 4px clamp(16px, 5vw, 80px);
   margin: 0;
   padding: 0;
   list-style: none;
-  width: 100%;
-}
-
-@media (max-width: 640px) {
-  .header {
-    padding: 18px clamp(24px, 8vw, 44px) 28px;
-  }
-
-  .header__list {
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    gap: 14px;
-  }
 }
 
 .header__link {
-  pointer-events: auto;
   display: inline-block;
-  padding: 6px 2px;
-  font-family: var(--sans);
-  font-size: 13px;
-  font-weight: 500;
-  letter-spacing: 0.34em;
-  text-transform: uppercase;
+  /* Symmetric vertical padding so the link text sits in the visual
+     center of the cartouche; the hover flourish lives below the link
+     box (bottom: -6px) instead of stealing bottom padding inside it. */
+  padding: 4px 4px;
+  font-family: var(--heading);
+  font-style: italic;
+  font-size: clamp(17px, 1.5vw, 22px);
+  font-weight: 400;
+  letter-spacing: 0.005em;
+  text-transform: none;
   text-decoration: none;
-  color: #fbf6ec;
+  color: #2c1830;
+  line-height: 1.2;
   position: relative;
-  transition: color 200ms ease;
-  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.55);
+  transition: color 220ms ease;
 }
 
+/* Hover flourish — same gold star + sprig ornament used under modal
+   titles, scaled to the link's width and revealed via a scaleX wipe
+   from the center. Positioned below the link box so the link itself
+   can keep symmetric vertical padding inside the cartouche. */
 .header__link::after {
   content: '';
   position: absolute;
-  left: 2px;
-  right: 2px;
-  bottom: 0;
-  height: 1px;
-  background: currentColor;
+  left: 0;
+  right: 0;
+  bottom: -6px;
+  height: 8px;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 10' preserveAspectRatio='none' fill='none' stroke='%23b88a47' stroke-linecap='round'><path d='M5 5 H38' stroke-width='1'/><path d='M62 5 H95' stroke-width='1'/><path d='M50 1.5 L51.6 4 L54 5 L51.6 6 L50 8.5 L48.4 6 L46 5 L48.4 4 Z' fill='%23b88a47' stroke='none'/><circle cx='42' cy='5' r='0.85' fill='%23b88a47' stroke='none'/><circle cx='58' cy='5' r='0.85' fill='%23b88a47' stroke='none'/></svg>");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 100% 100%;
   transform: scaleX(0);
   transform-origin: 50% 50%;
-  transition: transform 220ms ease;
+  opacity: 0;
+  transition: transform 320ms cubic-bezier(0.22, 0.61, 0.36, 1),
+    opacity 220ms ease;
 }
 
 .header__link:hover,
 .header__link:focus-visible {
+  color: #5e3148;
   outline: none;
 }
 
 .header__link:hover::after,
 .header__link:focus-visible::after {
   transform: scaleX(1);
+  opacity: 1;
 }
 
 @keyframes headerFadeIn {
+  from {
+    opacity: 0;
+  }
   to {
     opacity: 1;
   }
@@ -103,11 +138,19 @@
   .header {
     animation: none;
     opacity: 1;
+    transition: opacity 200ms ease;
+  }
+  .page:has(.modal-card:not(.modal-card--closing)) .header {
+    transform: none;
   }
 }
 
 /* Intro overlay
-   ------------------------------------------------------------------ */
+   ------------------------------------------------------------------
+   Same parchment + gold + aubergine language as the modals — the
+   landing screen reads as the cover of the same illuminated
+   invitation. A thin gold inset frame echoes the modal ring, and the
+   title carries the same star + sprig flourish underneath. */
 .intro {
   position: fixed;
   inset: 0;
@@ -115,8 +158,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #ffffff;
-  color: #000000;
+  background:
+    radial-gradient(120% 70% at 50% 0%, rgba(255, 226, 196, 0.55) 0%, rgba(255, 226, 196, 0) 55%),
+    radial-gradient(120% 80% at 50% 100%, rgba(232, 196, 214, 0.42) 0%, rgba(232, 196, 214, 0) 65%),
+    linear-gradient(180deg, #fbf2dd 0%, #f4e3c2 100%);
+  color: #2c1830;
+  outline: 1px solid rgba(184, 138, 71, 0.45);
+  outline-offset: -28px;
   opacity: 1;
   transition: opacity 800ms ease, transform 800ms ease;
   transform: scale(1);
@@ -143,57 +191,96 @@
   font-size: clamp(56px, 11vw, 132px);
   line-height: 1.05;
   letter-spacing: 0.01em;
-  color: #000000;
+  color: #2c1830;
   margin: 0;
+}
+
+/* Same star + sprig flourish used under modal titles, centered under
+   the names like the centerpiece of a vintage invitation card. */
+.intro__title::after {
+  content: '';
+  display: block;
+  width: 280px;
+  max-width: 55%;
+  height: 16px;
+  margin: 24px auto 0;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 168 14' fill='none' stroke='%23b88a47' stroke-linecap='round'><path d='M6 7 H62' stroke-width='1'/><path d='M106 7 H162' stroke-width='1'/><path d='M70 7 Q76 4 84 7 Q92 10 98 7' stroke-width='0.9'/><path d='M84 1.5 L86 6 L90.5 7 L86 8 L84 12.5 L82 8 L77.5 7 L82 6 Z' fill='%23b88a47' stroke='none'/><circle cx='66' cy='7' r='1.1' fill='%23b88a47' stroke='none'/><circle cx='102' cy='7' r='1.1' fill='%23b88a47' stroke='none'/></svg>");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
 }
 
 .intro__date {
   font-family: var(--script);
   font-weight: 400;
-  font-size: clamp(22px, 3.2vw, 36px);
-  color: #000000;
+  font-size: clamp(26px, 3.6vw, 40px);
+  color: #4a3140;
   margin: 0;
-  opacity: 0.85;
+  opacity: 0.92;
 }
 
 .intro__enter {
   appearance: none;
   background: transparent;
   border: 0;
-  margin-top: 22px;
-  padding: 6px 4px;
+  margin-top: 24px;
+  padding: 4px 10px 18px;
   font: inherit;
-  font-family: var(--sans);
-  font-size: 13px;
-  letter-spacing: 0.4em;
-  text-transform: uppercase;
-  color: #444444;
+  font-family: var(--heading);
+  font-style: italic;
+  font-size: clamp(22px, 2.1vw, 28px);
+  font-weight: 400;
+  letter-spacing: 0.005em;
+  text-transform: none;
+  color: #4a3140;
   cursor: pointer;
   position: relative;
-  transition: color 200ms ease;
+  transition: color 220ms ease;
 }
 
+/* Same gold star + sprig flourish as the header links — hidden until
+   hover, then wipes in from the center via scaleX. Uses the deeper
+   gold tone so it registers against the parchment intro background. */
 .intro__enter::after {
   content: '';
   position: absolute;
-  left: 4px;
-  right: 4px;
+  left: 0;
+  right: 0;
   bottom: 0;
-  height: 1px;
-  background: currentColor;
-  opacity: 0.5;
-  transition: opacity 200ms ease;
+  height: 10px;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 10' preserveAspectRatio='none' fill='none' stroke='%23b88a47' stroke-linecap='round'><path d='M5 5 H38' stroke-width='1'/><path d='M62 5 H95' stroke-width='1'/><path d='M50 1.5 L51.6 4 L54 5 L51.6 6 L50 8.5 L48.4 6 L46 5 L48.4 4 Z' fill='%23b88a47' stroke='none'/><circle cx='42' cy='5' r='0.85' fill='%23b88a47' stroke='none'/><circle cx='58' cy='5' r='0.85' fill='%23b88a47' stroke='none'/></svg>");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 100% 100%;
+  opacity: 0;
+  transform: scaleX(0);
+  transform-origin: 50% 50%;
+  transition: transform 320ms cubic-bezier(0.22, 0.61, 0.36, 1),
+    opacity 220ms ease;
 }
 
 .intro__enter:hover,
 .intro__enter:focus-visible {
-  color: #000000;
+  color: #2c1830;
   outline: none;
 }
 
 .intro__enter:hover::after,
 .intro__enter:focus-visible::after {
   opacity: 1;
+  transform: scaleX(1);
+}
+
+@media (max-width: 640px) {
+  .intro {
+    outline-offset: -16px;
+  }
+  .intro__title::after {
+    width: 200px;
+    max-width: 60%;
+    height: 14px;
+    margin-top: 18px;
+  }
 }
 
 /* Scene
@@ -208,12 +295,16 @@
   perspective-origin: 50% 65%;
   pointer-events: none;
   overflow: hidden;
-  background: #ffffff;
+  background: #fbf2dd;
 }
 
 .layer {
   position: absolute;
-  top: 0;
+  /* `--layer-top` lets us pull the foreground layers down on shorter / wider
+     viewports so the cover-fit backdrop has room to show sky above the arch
+     and couple. The backdrop layer keeps `--layer-top: 0` so it always
+     fills the full viewport (see the wide-aspect media queries below). */
+  top: var(--layer-top, 0);
   left: 0;
   right: 0;
   bottom: calc(-1 * (var(--bleed) + var(--drop, 0px)));
@@ -224,6 +315,34 @@
     0
   );
   will-change: transform;
+}
+
+/* Wide / short desktop viewports
+   ------------------------------------------------------------------
+   The wide variant of the foreground art is 16:9. With object-fit: contain
+   anchored to the bottom, that art fills the entire viewport height on
+   ~16:9-and-wider screens and only leaves a sliver of sunset sky peeking
+   out above the arch. Nudging the foreground layers' tops down here lets
+   them scale into a slightly shorter rectangle at the bottom of the
+   viewport, while the cover-fit backdrop continues to fill the full
+   viewport and shows through as sky in the band above. We escalate the
+   shift as the aspect ratio gets wider (and the viewport relatively
+   shorter), so a 16:10 monitor only gets a small nudge while an
+   ultrawide gets a noticeable one. */
+@media (min-width: 1024px) and (min-aspect-ratio: 8/5) {
+  .layer:not(.layer--backdrop) {
+    --layer-top: 5vh;
+  }
+}
+@media (min-width: 1024px) and (min-aspect-ratio: 16/9) {
+  .layer:not(.layer--backdrop) {
+    --layer-top: 9vh;
+  }
+}
+@media (min-width: 1024px) and (min-aspect-ratio: 2/1) {
+  .layer:not(.layer--backdrop) {
+    --layer-top: 13vh;
+  }
 }
 
 .layer__img {
@@ -277,49 +396,97 @@
 }
 
 /* Modal
-   ------------------------------------------------------------------ */
+   ------------------------------------------------------------------
+   Aesthetic notes:
+   - Parchment card with a thin gold inset ring evokes the matted prints
+     in the scrapbook look book and the warm twilight tones of the arch.
+   - A small star + sprig flourish under each title echoes the lit star
+     at the top of the wedding arch.
+   - Backdrop is a warm aubergine wash instead of cold near-black, so the
+     card feels like it's floating inside the same painting. */
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(12, 8, 20, 0.55);
+  background: radial-gradient(
+    ellipse 130% 95% at 50% 38%,
+    rgba(60, 28, 64, 0.58) 0%,
+    rgba(20, 10, 28, 0.78) 100%
+  );
   opacity: 0;
   z-index: 55;
   pointer-events: auto;
   animation: backdropFadeIn 380ms ease-out 540ms both;
 }
 
+/* The .modal-stage wrapper exists purely to host CSS custom properties
+   (--dx, --dy, --trail-*) that Modal.tsx sets inline. display:contents
+   means it produces no box of its own — its fixed-positioned children
+   layout as if they were direct siblings of the page root. */
+.modal-stage {
+  display: contents;
+}
+
 .modal-card {
-  --emerge-y: 50%;
+  --modal-gold: #b88a47;
+  --modal-gold-soft: rgba(184, 138, 71, 0.55);
+  --modal-ink: #2c1830;
+  --modal-ink-soft: #4a3140;
   position: fixed;
-  top: var(--emerge-y);
+  top: 50%;
   left: 50%;
   width: clamp(420px, 56vw, 620px);
   max-height: calc(100svh - 80px);
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 40px 44px;
-  background: #fbf6ec;
-  color: #1a1420;
-  border: 1px solid rgba(12, 8, 20, 0.08);
-  border-radius: 18px;
+  padding: 48px 48px 44px;
+  background:
+    radial-gradient(120% 70% at 50% 0%, rgba(255, 226, 196, 0.55) 0%, rgba(255, 226, 196, 0) 55%),
+    radial-gradient(120% 80% at 50% 100%, rgba(232, 196, 214, 0.42) 0%, rgba(232, 196, 214, 0) 65%),
+    linear-gradient(180deg, #fbf2dd 0%, #f4e3c2 100%);
+  color: var(--modal-ink);
+  border: 1px solid rgba(140, 95, 50, 0.4);
+  outline: 1px solid var(--modal-gold-soft);
+  outline-offset: -9px;
+  border-radius: 22px;
   box-shadow:
-    0 32px 80px rgba(12, 8, 20, 0.45),
-    0 4px 16px rgba(12, 8, 20, 0.25);
+    0 32px 80px rgba(20, 10, 30, 0.5),
+    0 4px 16px rgba(20, 10, 30, 0.28);
   pointer-events: auto;
-  transform: translate(-50%, -50%) scale(0.1);
+  /* Start point: translated to the clicked link (--dx/--dy from center)
+     at a near-zero scale. The keyframes animate this back to a centered
+     scale(1) so the card visually grows out of the link. */
+  transform: translate(calc(-50% + var(--dx, 0px)), calc(-50% + var(--dy, 0px)))
+    scale(0.05);
   opacity: 0;
-  z-index: 1;
-  animation: modalEmerge 950ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  /* Stay above the header / scene throughout the open + close so the
+     modal never visually ducks behind other elements. */
+  z-index: 60;
+  animation: modalEmerge 820ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
 }
 
 .modal-title {
-  margin: 0 0 18px;
+  margin: 0 0 8px;
   font-family: var(--display);
   font-weight: 400;
   font-size: clamp(36px, 4.4vw, 56px);
   line-height: 1.05;
   letter-spacing: 0.01em;
-  color: #08060d;
+  color: var(--modal-ink);
+}
+
+/* Star + sprig flourish under the title — golden, decorative, echoes
+   the lit star at the top of the arch in the landing scene. */
+.modal-title::after {
+  content: '';
+  display: block;
+  width: 168px;
+  max-width: 70%;
+  height: 12px;
+  margin: 10px 0 0;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 168 14' fill='none' stroke='%23b88a47' stroke-linecap='round'><path d='M6 7 H62' stroke-width='1'/><path d='M106 7 H162' stroke-width='1'/><path d='M70 7 Q76 4 84 7 Q92 10 98 7' stroke-width='0.9'/><path d='M84 1.5 L86 6 L90.5 7 L86 8 L84 12.5 L82 8 L77.5 7 L82 6 Z' fill='%23b88a47' stroke='none'/><circle cx='66' cy='7' r='1.1' fill='%23b88a47' stroke='none'/><circle cx='102' cy='7' r='1.1' fill='%23b88a47' stroke='none'/></svg>");
+  background-repeat: no-repeat;
+  background-position: left center;
+  background-size: contain;
 }
 
 .modal-body {
@@ -327,7 +494,7 @@
   font-family: var(--sans);
   font-size: clamp(15px, 1.05vw, 17px);
   line-height: 1.6;
-  color: #3b3344;
+  color: var(--modal-ink-soft);
 }
 
 .modal-content {
@@ -338,38 +505,39 @@
 
 .modal-lead {
   margin: 0;
-  font-family: var(--sans);
-  font-size: clamp(16px, 1.15vw, 18px);
-  line-height: 1.55;
-  color: #3b3344;
+  font-family: var(--heading);
+  font-size: clamp(17px, 1.2vw, 20px);
+  font-style: italic;
+  line-height: 1.5;
+  color: var(--modal-ink-soft);
 }
 
 .modal-contact {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 18px 20px;
-  border: 1px solid rgba(12, 8, 20, 0.1);
-  border-radius: 12px;
-  background: rgba(12, 8, 20, 0.03);
+  gap: 8px;
+  padding: 20px 22px;
+  border: 1px solid rgba(140, 95, 50, 0.28);
+  border-radius: 14px;
+  background: rgba(255, 240, 212, 0.55);
 }
 
 .modal-eyebrow {
-  font-family: var(--sans);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: #6b6375;
+  font-family: var(--heading);
+  font-style: italic;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: #8b6a3a;
 }
 
 .modal-contact__link {
-  font-family: var(--sans);
-  font-size: clamp(18px, 1.6vw, 22px);
-  font-weight: 700;
+  font-family: var(--heading);
+  font-size: clamp(20px, 1.7vw, 24px);
+  font-weight: 600;
   line-height: 1.25;
   letter-spacing: 0.005em;
-  color: #2d4ea0;
+  color: #3f6b48;
   text-decoration: none;
   word-break: break-word;
   transition: color 180ms ease;
@@ -377,7 +545,7 @@
 
 .modal-contact__link:hover,
 .modal-contact__link:focus-visible {
-  color: #c25e83;
+  color: #a04a6d;
   outline: none;
 }
 
@@ -386,7 +554,7 @@
   font-family: var(--sans);
   font-size: 13px;
   line-height: 1.5;
-  color: #6b6375;
+  color: #7a5c3a;
 }
 
 .modal-schedule {
@@ -401,11 +569,11 @@
 .modal-schedule__item {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 18px 20px;
-  border: 1px solid rgba(12, 8, 20, 0.1);
-  border-radius: 12px;
-  background: rgba(12, 8, 20, 0.03);
+  gap: 8px;
+  padding: 20px 22px;
+  border: 1px solid rgba(140, 95, 50, 0.28);
+  border-radius: 14px;
+  background: rgba(255, 240, 212, 0.55);
 }
 
 .modal-schedule__title {
@@ -415,7 +583,7 @@
   font-size: clamp(20px, 1.9vw, 26px);
   line-height: 1.15;
   letter-spacing: 0.005em;
-  color: #08060d;
+  color: var(--modal-ink);
 }
 
 .modal-schedule__description {
@@ -423,33 +591,82 @@
   font-family: var(--sans);
   font-size: clamp(14px, 1vw, 16px);
   line-height: 1.5;
-  color: #3b3344;
+  color: var(--modal-ink-soft);
 }
 
+/* Aubergine pill skinned to match the rest of the modal — gold inset ring
+   echoes the modal card's own outline, italic serif text matches the
+   header / intro buttons, and the gold star+sprig flourishes on either
+   side of the label tie back to the title flourish. */
 .modal-button {
-  align-self: flex-start;
-  display: inline-block;
-  padding: 14px 28px;
-  font-family: var(--sans);
-  font-size: 13px;
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 14px 32px;
+  font-family: var(--heading);
+  font-style: italic;
+  font-size: clamp(17px, 1.35vw, 20px);
   font-weight: 500;
-  letter-spacing: 0.34em;
-  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  text-transform: none;
   text-decoration: none;
-  color: #fbf6ec;
-  background: #1a1420;
-  border: 1px solid #1a1420;
+  color: #f6e6c2;
+  background: linear-gradient(180deg, #3a1f42 0%, #2c1830 100%);
+  border: 1px solid rgba(184, 138, 71, 0.75);
+  outline: 1px solid rgba(184, 138, 71, 0.4);
+  outline-offset: -5px;
   border-radius: 999px;
   cursor: pointer;
-  transition: background 200ms ease, color 200ms ease, transform 200ms ease;
+  box-shadow: 0 6px 18px rgba(20, 10, 30, 0.32),
+    inset 0 1px 0 rgba(255, 226, 196, 0.08);
+  transition: color 220ms ease, border-color 220ms ease, outline-color 220ms ease,
+    box-shadow 220ms ease, transform 220ms ease;
+}
+
+/* Tiny gold star glyphs flanking the label, drawn from the same flourish
+   SVG used under the modal title. Sized small so they read as decorative
+   bookends rather than icons. */
+.modal-button::before,
+.modal-button::after {
+  content: '';
+  width: 22px;
+  height: 10px;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 22 10' fill='none' stroke='%23d8a866' stroke-linecap='round'><path d='M2 5 H7' stroke-width='0.9'/><path d='M11 1.5 L12.6 4 L15 5 L12.6 6 L11 8.5 L9.4 6 L7 5 L9.4 4 Z' fill='%23d8a866' stroke='none'/><path d='M15 5 H20' stroke-width='0.9'/></svg>");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  flex: 0 0 auto;
+  transition: filter 220ms ease, transform 220ms ease;
+}
+
+.modal-button::after {
+  transform: scaleX(-1);
 }
 
 .modal-button:hover,
 .modal-button:focus-visible {
-  background: #fbf6ec;
-  color: #1a1420;
+  color: #fbf3df;
+  border-color: rgba(216, 168, 102, 0.95);
+  outline-color: rgba(216, 168, 102, 0.7);
   outline: none;
+  box-shadow: 0 10px 24px rgba(20, 10, 30, 0.4),
+    inset 0 0 0 1px rgba(216, 168, 102, 0.55),
+    inset 0 0 18px rgba(216, 168, 102, 0.18);
   transform: translateY(-1px);
+}
+
+.modal-button:hover::before,
+.modal-button:focus-visible::before,
+.modal-button:hover::after,
+.modal-button:focus-visible::after {
+  filter: drop-shadow(0 0 4px rgba(216, 168, 102, 0.55));
+}
+
+.modal-button:focus-visible {
+  outline: 2px solid rgba(216, 168, 102, 0.6);
+  outline-offset: 3px;
 }
 
 .modal-close {
@@ -465,10 +682,10 @@
   background: transparent;
   border: 0;
   border-radius: 50%;
-  font-family: var(--sans);
-  font-size: 28px;
+  font-family: var(--heading);
+  font-size: 30px;
   line-height: 1;
-  color: #6b6375;
+  color: #8b6a3a;
   cursor: pointer;
   pointer-events: auto;
   transition: color 180ms ease, background 180ms ease;
@@ -476,8 +693,8 @@
 
 .modal-close:hover,
 .modal-close:focus-visible {
-  color: #08060d;
-  background: rgba(12, 8, 20, 0.08);
+  color: #2e1a34;
+  background: rgba(184, 138, 71, 0.16);
   outline: none;
 }
 
@@ -495,6 +712,7 @@
   padding: 0;
   background: transparent;
   border: 0;
+  outline: 0;
   border-radius: 14px;
   overflow: hidden;
 }
@@ -538,56 +756,93 @@
   }
 }
 
+/* Card materializes out of the clicked link (--dx/--dy offset from
+   viewport center) and grows to its final, centered form. Opacity
+   interpolates linearly from 0 to 1 over the whole animation so the
+   modal fades in as it grows. Stays at z-index 60 throughout so it
+   never passes behind the header / scene. */
 @keyframes modalEmerge {
   0% {
-    z-index: 1;
-    top: var(--emerge-y);
-    transform: translate(-50%, -50%) scale(0.1);
+    transform: translate(calc(-50% + var(--dx, 0px)), calc(-50% + var(--dy, 0px)))
+      scale(0.05);
     opacity: 0;
   }
-  20% {
-    opacity: 1;
-  }
-  60% {
-    z-index: 1;
-  }
-  61% {
-    z-index: 60;
-  }
   100% {
-    z-index: 60;
-    top: 50%;
     transform: translate(-50%, -50%) scale(1);
     opacity: 1;
   }
 }
 
+/* Card retreats back toward the clicked link, fading out linearly across
+   the whole close to mirror the gradual open. */
 @keyframes modalRetreat {
   0% {
-    z-index: 60;
-    top: 50%;
     transform: translate(-50%, -50%) scale(1);
     opacity: 1;
   }
-  39% {
-    z-index: 60;
-  }
-  40% {
-    z-index: 1;
-  }
-  80% {
-    opacity: 1;
-  }
   100% {
-    z-index: 1;
-    top: var(--emerge-y);
-    transform: translate(-50%, -50%) scale(0.1);
+    transform: translate(calc(-50% + var(--dx, 0px)), calc(-50% + var(--dy, 0px)))
+      scale(0.06);
     opacity: 0;
   }
 }
 
 .modal-card--closing {
-  animation: modalRetreat 750ms cubic-bezier(0.5, 0, 0.75, 0.6) both;
+  animation: modalRetreat 700ms cubic-bezier(0.5, 0, 0.75, 0.6) both;
+}
+
+
+/* Sparkle constellation that flickers across the card while it
+   materializes. The wrapper is an overlay pinned to the card's bounds so
+   each .modal-sparkle can position with simple percentages. */
+.modal-sparkles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 6;
+}
+
+.modal-sparkle {
+  position: absolute;
+  left: var(--x, 50%);
+  top: var(--y, 50%);
+  width: var(--size, 10px);
+  height: var(--size, 10px);
+  transform: translate(-50%, -50%) scale(0) rotate(0deg);
+  opacity: 0;
+  animation: sparkleFlash 1100ms ease-out var(--delay, 0ms) both;
+}
+
+.modal-sparkle svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  fill: #fff3d6;
+  /* Tight inner glow + a wider warm halo gives each twinkle a real "lit"
+     feel without needing a backplate. */
+  filter:
+    drop-shadow(0 0 4px rgba(255, 215, 145, 0.95))
+    drop-shadow(0 0 12px rgba(255, 190, 110, 0.45));
+}
+
+@keyframes sparkleFlash {
+  0% {
+    transform: translate(-50%, -50%) scale(0) rotate(0deg);
+    opacity: 0;
+  }
+  30% {
+    transform: translate(-50%, -50%) scale(var(--peak, 1.2)) rotate(45deg);
+    opacity: 1;
+  }
+  55% {
+    transform: translate(-50%, -50%) scale(calc(var(--peak, 1.2) * 0.85))
+      rotate(80deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(0) rotate(180deg);
+    opacity: 0;
+  }
 }
 
 .modal-backdrop--closing {
@@ -603,15 +858,7 @@
   }
 }
 
-/* Portrait small screens: anchor the emergence inside the arch (which sits
-   low in the viewport when object-fit: contain is anchored bottom-center). */
-@media (max-width: 1023px) and (orientation: portrait) {
-  .modal-card {
-    --emerge-y: 72%;
-  }
-}
-
-/* Phone breakpoint, matching the existing header column layout. */
+/* Phone breakpoint — tighten modal padding / font sizes for narrow viewports. */
 @media (max-width: 640px) {
   .modal-card {
     width: min(92vw, 480px);
@@ -644,18 +891,18 @@
     font-size: 14px;
   }
   .modal-button {
-    align-self: stretch;
-    text-align: center;
-    padding: 14px 22px;
+    align-self: center;
+    padding: 13px 24px;
+    gap: 10px;
+    font-size: 17px;
+  }
+  .modal-button::before,
+  .modal-button::after {
+    width: 18px;
   }
   .modal-close {
     top: 8px;
     right: 8px;
-  }
-  /* Header collapses to a tall column at this breakpoint, so leave more
-     vertical breathing room around the look book modal. */
-  .modal-card.modal-card--lookbook {
-    --lookbook-clear: 240px;
   }
 }
 
@@ -665,10 +912,25 @@
     padding: 22px 24px;
     max-height: calc(100svh - 24px);
   }
-  /* Header is back to a row layout here, so a smaller top/bottom inset
-     is enough — and avoids shrinking the look book to nothing. */
+}
+
+/* iPad + phone — keep the artwork's aspect ratio (no horizontal crop)
+   and size the modal to be the largest aspect-correct rectangle that
+   fits inside the viewport, leaving a tappable strip of backdrop
+   around it for dismiss-on-tap-outside. */
+@media (max-width: 1023px) {
   .modal-card.modal-card--lookbook {
-    --lookbook-clear: 90px;
+    width: min(92vw, calc(92svh * 814 / 1024));
+    max-width: 92vw;
+    height: auto;
+    aspect-ratio: 814 / 1024;
+    max-height: 92svh;
+    border-radius: 16px;
+  }
+  /* Nudge the close button below any iOS notch / status bar. */
+  .modal-card--lookbook .modal-close {
+    top: max(12px, env(safe-area-inset-top, 0px) + 4px);
+    right: max(12px, env(safe-area-inset-right, 0px) + 4px);
   }
 }
 
@@ -686,12 +948,19 @@
     animation: none;
     opacity: 1;
     top: 50%;
+    left: 50%;
     transform: translate(-50%, -50%) scale(1);
     z-index: 60;
+    filter: none;
     transition: opacity 200ms ease;
   }
   .modal-card--closing {
     animation: none;
+    filter: none;
     opacity: 0;
+  }
+  /* Skip the sparkle theatrics for reduced-motion users. */
+  .modal-sparkles {
+    display: none;
   }
 }

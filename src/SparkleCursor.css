@@ -1,0 +1,14 @@
+/* Sparkle cursor canvas
+   ------------------------------------------------------------------
+   A full-viewport canvas layered above all UI for the magical
+   sparkle/trail/click-burst effect. Never captures pointer events so
+   the underlying UI keeps working, and the native cursor stays
+   visible since there's no custom cursor to replace it. */
+.sparkle-cursor__canvas {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 9998;
+  pointer-events: none;
+}

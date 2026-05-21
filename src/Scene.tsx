@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import type { CSSProperties } from 'react'
+import type { ModalOrigin } from './Header'
 import { Modal } from './Modal'
 
 type Layer = {
@@ -44,10 +45,11 @@ const ENTRANCE_DELAY_MS = 150
 
 type Props = {
   activeLink: string | null
+  origin: ModalOrigin | null
   onClose: () => void
 }
 
-export function Scene({ activeLink, onClose }: Props) {
+export function Scene({ activeLink, origin, onClose }: Props) {
   const stageRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
@@ -84,16 +86,63 @@ export function Scene({ activeLink, onClose }: Props) {
       targetY = (event.clientY / h) * 2 - 1
     }
 
+    // Tilt parallax for phones / tablets. We capture the orientation of the
+    // first event as the "neutral" pose so the effect is relative to however
+    // the user is naturally holding the device, then map ±TILT_RANGE degrees
+    // of deviation onto the same -1..1 range the cursor uses on desktop.
+    const TILT_RANGE_DEG = 18
+    let baselineBeta: number | null = null
+    let baselineGamma: number | null = null
+
+    const getScreenAngle = (): number => {
+      const angle = window.screen?.orientation?.angle
+      if (typeof angle === 'number') return angle
+      // Safari iPad / older iOS fallback. window.orientation is -90 | 0 | 90 | 180.
+      const legacy = (window as unknown as { orientation?: number }).orientation
+      return typeof legacy === 'number' ? legacy : 0
+    }
+
     const handleOrientation = (event: DeviceOrientationEvent) => {
-      const gamma = event.gamma ?? 0
-      const beta = event.beta ?? 0
-      targetX = Math.max(-1, Math.min(1, gamma / 30))
-      targetY = Math.max(-1, Math.min(1, (beta - 45) / 30))
+      const gamma = event.gamma ?? 0 // left/right tilt, degrees
+      const beta = event.beta ?? 0 // front/back tilt, degrees
+      if (baselineBeta === null || baselineGamma === null) {
+        baselineBeta = beta
+        baselineGamma = gamma
+        return
+      }
+      const dGamma = gamma - baselineGamma
+      const dBeta = beta - baselineBeta
+
+      // Re-map the raw axes based on how the screen is rotated so "tilt right"
+      // always pushes the scene right regardless of portrait / landscape.
+      let dx = dGamma
+      let dy = dBeta
+      const angle = getScreenAngle()
+      if (angle === 90) {
+        dx = dBeta
+        dy = -dGamma
+      } else if (angle === 180) {
+        dx = -dGamma
+        dy = -dBeta
+      } else if (angle === -90 || angle === 270) {
+        dx = -dBeta
+        dy = dGamma
+      }
+
+      targetX = Math.max(-1, Math.min(1, dx / TILT_RANGE_DEG))
+      targetY = Math.max(-1, Math.min(1, dy / TILT_RANGE_DEG))
+    }
+
+    const resetBaseline = () => {
+      baselineBeta = null
+      baselineGamma = null
     }
 
     const isTouch = window.matchMedia('(hover: none)').matches
     if (isTouch) {
       window.addEventListener('deviceorientation', handleOrientation)
+      window.screen?.orientation?.addEventListener?.('change', resetBaseline)
+      window.addEventListener('orientationchange', resetBaseline)
     } else {
       window.addEventListener('pointermove', handlePointerMove)
     }
@@ -102,6 +151,8 @@ export function Scene({ activeLink, onClose }: Props) {
       window.cancelAnimationFrame(rafId)
       window.removeEventListener('pointermove', handlePointerMove)
       window.removeEventListener('deviceorientation', handleOrientation)
+      window.screen?.orientation?.removeEventListener?.('change', resetBaseline)
+      window.removeEventListener('orientationchange', resetBaseline)
     }
   }, [])
 
@@ -131,7 +182,7 @@ export function Scene({ activeLink, onClose }: Props) {
           </div>
         )
       })}
-      {activeLink && <Modal label={activeLink} onClose={onClose} />}
+      {activeLink && <Modal label={activeLink} origin={origin} onClose={onClose} />}
     </div>
   )
 }

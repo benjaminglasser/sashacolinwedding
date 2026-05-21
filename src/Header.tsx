@@ -9,8 +9,10 @@ const LINKS = [
   { label: 'Questions', href: '#questions' },
 ]
 
+export type ModalOrigin = { x: number; y: number }
+
 type Props = {
-  onOpen: (label: string) => void
+  onOpen: (label: string, origin: ModalOrigin) => void
 }
 
 export function Header({ onOpen }: Props) {
@@ -35,7 +37,13 @@ export function Header({ onOpen }: Props) {
                   href={link.href}
                   onClick={(event) => {
                     event.preventDefault()
-                    onOpen(link.label)
+                    // Hand the modal the link's screen-space center so it can
+                    // grow out of exactly the spot the user clicked.
+                    const rect = event.currentTarget.getBoundingClientRect()
+                    onOpen(link.label, {
+                      x: rect.left + rect.width / 2,
+                      y: rect.top + rect.height / 2,
+                    })
                   }}
                 >
                   {link.label}
