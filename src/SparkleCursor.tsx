@@ -10,9 +10,10 @@ import './SparkleCursor.css'
    - On pointermove we emit small fairy-dust sparkles along the path
      the cursor just traveled (so trails stay continuous at speed).
    - On pointerdown we emit a fast outward burst of "spark" particles
-     (with drag + gravity) plus extra lingering sparkles.
-   - Skipped entirely on touch / coarse-pointer devices and on users
-     with prefers-reduced-motion. The native cursor is never hidden. */
+     (with drag + gravity) plus extra lingering sparkles. Works for
+     mouse clicks and finger taps alike via Pointer Events.
+   - Skipped entirely for users with prefers-reduced-motion. The
+     native cursor is never hidden. */
 
 type ParticleKind = 'sparkle' | 'spark'
 
@@ -49,8 +50,7 @@ export function SparkleCursor() {
     if (typeof window === 'undefined') return
 
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    const isCoarse = window.matchMedia('(hover: none), (pointer: coarse)').matches
-    if (reduceMotion || isCoarse) return
+    if (reduceMotion) return
 
     const canvas = canvasRef.current
     if (!canvas) return
@@ -134,7 +134,26 @@ export function SparkleCursor() {
     }
 
     const onDown = (e: PointerEvent) => {
+      // For touch taps, seed the pointer at the down location so the
+      // burst doesn't draw a streak from a previous tap site.
+      if (e.pointerType !== 'mouse') {
+        pointer.x = e.clientX
+        pointer.y = e.clientY
+        pointer.lastX = e.clientX
+        pointer.lastY = e.clientY
+        pointer.seen = true
+      }
       emitBurst(e.clientX, e.clientY)
+    }
+
+    const onUp = (e: PointerEvent) => {
+      // When a finger lifts there's no more "cursor" to trail from, so
+      // forget the position. The next tap will re-seed via onDown.
+      if (e.pointerType !== 'mouse') {
+        pointer.x = -200
+        pointer.y = -200
+        pointer.seen = false
+      }
     }
 
     const onLeave = () => {
@@ -144,7 +163,9 @@ export function SparkleCursor() {
     }
 
     window.addEventListener('pointermove', onMove, { passive: true })
-    window.addEventListener('pointerdown', onDown)
+    window.addEventListener('pointerdown', onDown, { passive: true })
+    window.addEventListener('pointerup', onUp, { passive: true })
+    window.addEventListener('pointercancel', onUp, { passive: true })
     document.addEventListener('mouseleave', onLeave)
 
     // Draw a 4-point sparkle star centered at (0,0). The glow is
@@ -246,6 +267,8 @@ export function SparkleCursor() {
       window.removeEventListener('resize', resize)
       window.removeEventListener('pointermove', onMove)
       window.removeEventListener('pointerdown', onDown)
+      window.removeEventListener('pointerup', onUp)
+      window.removeEventListener('pointercancel', onUp)
       document.removeEventListener('mouseleave', onLeave)
     }
   }, [])

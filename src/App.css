@@ -671,30 +671,47 @@
 
 .modal-close {
   position: absolute;
-  top: 12px;
-  right: 12px;
-  width: 44px;
-  height: 44px;
+  top: 10px;
+  right: 10px;
+  /* Generous 56px hit target — well above the 44px minimum so even
+     off-center taps register. Visible glyph stays tucked inside a
+     faint ring so users can see exactly where the button is. */
+  width: 56px;
+  height: 56px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   appearance: none;
-  background: transparent;
+  background: rgba(184, 138, 71, 0.1);
   border: 0;
   border-radius: 50%;
   font-family: var(--heading);
-  font-size: 30px;
+  font-size: 32px;
   line-height: 1;
   color: #8b6a3a;
   cursor: pointer;
   pointer-events: auto;
+  /* Extra safety: bump above sparkles (z-index 6) so a stray sparkle
+     can never visually obscure the affordance. */
+  z-index: 8;
+  -webkit-tap-highlight-color: transparent;
   transition: color 180ms ease, background 180ms ease;
+}
+
+/* Invisible pseudo-element extends the touch hit area another ~10px
+   on every side without enlarging the visible button. Stays inside
+   the modal-card bounds so overflow:auto doesn't clip it. */
+.modal-close::before {
+  content: '';
+  position: absolute;
+  inset: -10px;
+  border-radius: 50%;
 }
 
 .modal-close:hover,
 .modal-close:focus-visible {
   color: #2e1a34;
-  background: rgba(184, 138, 71, 0.16);
+  background: rgba(184, 138, 71, 0.22);
   outline: none;
 }
 
@@ -732,7 +749,10 @@
   background: rgba(255, 255, 255, 0.86);
   color: #1a1420;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.28);
-  z-index: 2;
+  /* Override base z-index from .modal-close — needed so it sits above
+     the look-book image. The base value (8) is already plenty, but
+     keep an explicit override here for clarity. */
+  z-index: 8;
 }
 
 .modal-card--lookbook .modal-close:hover,
@@ -901,8 +921,13 @@
     width: 18px;
   }
   .modal-close {
-    top: 8px;
-    right: 8px;
+    top: 10px;
+    right: 10px;
+    /* Slightly smaller on phones so the button doesn't crowd the
+       title, but still comfortably above the 44px hit-target floor. */
+    width: 52px;
+    height: 52px;
+    font-size: 30px;
   }
 }
 
