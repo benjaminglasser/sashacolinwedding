@@ -151,6 +151,12 @@ export function Modal({ label, origin, onClose }: Props) {
             ))}
           </div>
         )}
+        {/* Close button is intentionally a sibling of (not inside)
+            `.modal-card__body` so it stays anchored to the card edge
+            while the body scrolls. Previously it lived inside the
+            scroll container and would slide up out of view on long
+            modals (notably Schedule on phones), making the visible
+            X-tap area land on whatever had scrolled into its place. */}
         <button
           ref={closeRef}
           type="button"
@@ -177,67 +183,69 @@ export function Modal({ label, origin, onClose }: Props) {
             />
           </svg>
         </button>
-        {isLookBook ? (
-          <img
-            className="modal-lookbook-img"
-            src="/assets/look-book.png"
-            alt="Guest attire inspiration guide"
-            draggable={false}
-          />
-        ) : (
-          <>
-            <h2 className="modal-title">{label}</h2>
-            {label === 'Questions' ? (
-              <div className="modal-content">
-                <p className="modal-lead">
-                  Have a question about the wedding? We'd love to hear from you.
-                </p>
-                <div className="modal-contact">
-                  <span className="modal-eyebrow">Email us</span>
-                  <a className="modal-contact__link" href={`mailto:${QUESTIONS_EMAIL}`}>
-                    {QUESTIONS_EMAIL}
+        <div className="modal-card__body">
+          {isLookBook ? (
+            <img
+              className="modal-lookbook-img"
+              src="/assets/look-book.png"
+              alt="Guest attire inspiration guide"
+              draggable={false}
+            />
+          ) : (
+            <>
+              <h2 className="modal-title">{label}</h2>
+              {label === 'Questions' ? (
+                <div className="modal-content">
+                  <p className="modal-lead">
+                    Have a question about the wedding? We'd love to hear from you.
+                  </p>
+                  <div className="modal-contact">
+                    <span className="modal-eyebrow">Email us</span>
+                    <a className="modal-contact__link" href={`mailto:${QUESTIONS_EMAIL}`}>
+                      {QUESTIONS_EMAIL}
+                    </a>
+                  </div>
+                  <p className="modal-note">
+                    We'll do our best to get back to you within a few days.
+                  </p>
+                </div>
+              ) : label === 'Schedule' ? (
+                <div className="modal-content">
+                  <p className="modal-lead">
+                    A weekend of celebration. More details to come closer to the date.
+                  </p>
+                  <ol className="modal-schedule">
+                    {SCHEDULE.map((item) => (
+                      <li key={item.date} className="modal-schedule__item">
+                        <span className="modal-eyebrow">{item.date}</span>
+                        <h3 className="modal-schedule__title">{item.title}</h3>
+                        <p className="modal-schedule__description">{item.description}</p>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              ) : label === 'Registry' ? (
+                <div className="modal-content">
+                  <p className="modal-lead">
+                    Your presence at our wedding is the greatest gift we could ask for.
+                    If you would still like to contribute something, we would be incredibly
+                    grateful for support toward our honeymoon adventures.
+                  </p>
+                  <a
+                    className="modal-button"
+                    href={REGISTRY_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Visit our registry
                   </a>
                 </div>
-                <p className="modal-note">
-                  We'll do our best to get back to you within a few days.
-                </p>
-              </div>
-            ) : label === 'Schedule' ? (
-              <div className="modal-content">
-                <p className="modal-lead">
-                  A weekend of celebration. More details to come closer to the date.
-                </p>
-                <ol className="modal-schedule">
-                  {SCHEDULE.map((item) => (
-                    <li key={item.date} className="modal-schedule__item">
-                      <span className="modal-eyebrow">{item.date}</span>
-                      <h3 className="modal-schedule__title">{item.title}</h3>
-                      <p className="modal-schedule__description">{item.description}</p>
-                    </li>
-                  ))}
-                </ol>
-              </div>
-            ) : label === 'Registry' ? (
-              <div className="modal-content">
-                <p className="modal-lead">
-                  Your presence at our wedding is the greatest gift we could ask for.
-                  If you would still like to contribute something, we would be incredibly
-                  grateful for support toward our honeymoon adventures.
-                </p>
-                <a
-                  className="modal-button"
-                  href={REGISTRY_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Visit our registry
-                </a>
-              </div>
-            ) : (
-              <p className="modal-body">{LOREM}</p>
-            )}
-          </>
-        )}
+              ) : (
+                <p className="modal-body">{LOREM}</p>
+              )}
+            </>
+          )}
+        </div>
       </div>
     </div>
   )
