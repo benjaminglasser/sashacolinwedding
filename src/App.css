@@ -686,14 +686,17 @@
 
 .modal-close {
   position: absolute;
-  top: 10px;
-  right: 10px;
-  /* Generous 56px hit target — well above the 44px minimum so even
-     off-center taps register. The inner SVG sits at the exact center
-     of this box, so the visible × and the hit-target center coincide. */
-  width: 56px;
-  height: 56px;
-  display: inline-flex;
+  top: 6px;
+  right: 6px;
+  /* The button itself IS the hit target (no pseudo-element trickery).
+     A flat 64x64 square — symmetric around the centered X icon — means
+     iOS can't end up with an asymmetric hit zone the way it did when
+     the previous `::before` hit-area extension got clipped on one side
+     by the card's overflow:hidden. Comfortably above the 44pt iOS /
+     48dp Android tap-target minimums. */
+  width: 64px;
+  height: 64px;
+  display: flex;
   align-items: center;
   justify-content: center;
   appearance: none;
@@ -704,6 +707,11 @@
   color: #8b6a3a;
   cursor: pointer;
   pointer-events: auto;
+  /* Tell iOS this is a tap target, not a gesture start. Eliminates the
+     ~300ms double-tap delay and prevents the scroll/zoom gesture
+     recognizer from swallowing taps that land near the scrollable
+     modal body. */
+  touch-action: manipulation;
   /* Extra safety: bump above sparkles (z-index 6) so a stray sparkle
      can never visually obscure the affordance. */
   z-index: 8;
@@ -711,28 +719,21 @@
   transition: color 180ms ease, background 180ms ease;
 }
 
-/* Invisible pseudo-element extends the touch hit area another ~14px
-   on every side without enlarging the visible button. Combined with the
-   56/52px visible button this gives an ~84/80px square hit zone — well
-   above the 44px iOS / 48dp Android minimums even for sloppy thumb
-   taps near the screen edge. Stays inside the modal-card bounds so
-   overflow:hidden doesn't clip it. */
-.modal-close::before {
-  content: '';
-  position: absolute;
-  inset: -14px;
-  border-radius: 50%;
-}
-
 /* Inline X icon — drawn from a square viewBox so the visible mark is
-   geometrically centered in the 56px hit target. Replaces the text
+   geometrically centered in the 64px hit target. Replaces the text
    `&times;`, which renders low in Cormorant Garamond's em box and
-   visually offsets the × from the center of the button. */
+   visually offsets the × from the center of the button.
+
+   `pointer-events: none` is critical: it makes every tap inside the
+   button's bounding box resolve to the button itself (with its click
+   handler), instead of potentially resolving to the SVG element or
+   its path and relying on event bubbling to reach the button. */
 .modal-close__icon {
   display: block;
   width: 22px;
   height: 22px;
   fill: none;
+  pointer-events: none;
 }
 
 .modal-close:hover,
@@ -784,7 +785,15 @@
 }
 
 .modal-card--lookbook .modal-close {
+  /* `padding` + `background-clip: content-box` keeps the visible white
+     disc at roughly the same ~52px diameter it was before the hit
+     target grew to 64x64 — the button's full 64x64 area is still
+     tappable, but the painted circle stays a tidy size over the
+     look-book image. */
+  padding: 6px;
   background: rgba(255, 255, 255, 0.86);
+  background-clip: content-box;
+  -webkit-background-clip: content-box;
   color: #1a1420;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.28);
   /* Override base z-index from .modal-close — needed so it sits above
@@ -796,6 +805,8 @@
 .modal-card--lookbook .modal-close:hover,
 .modal-card--lookbook .modal-close:focus-visible {
   background: #ffffff;
+  background-clip: content-box;
+  -webkit-background-clip: content-box;
   color: #08060d;
 }
 
@@ -979,12 +990,14 @@
     width: 18px;
   }
   .modal-close {
-    top: 10px;
-    right: 10px;
-    /* Slightly smaller on phones so the button doesn't crowd the
-       title, but still comfortably above the 44px hit-target floor. */
-    width: 52px;
-    height: 52px;
+    /* Hit target stays 64x64 on phones — we deliberately don't shrink
+       it. The visible X-icon shrinks slightly to keep the corner from
+       looking crowded, but the tap zone remains the full square so
+       even imprecise thumb taps register. */
+    top: 6px;
+    right: 6px;
+    width: 64px;
+    height: 64px;
   }
   .modal-close__icon {
     width: 20px;
