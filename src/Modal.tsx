@@ -158,7 +158,24 @@ export function Modal({ label, origin, onClose }: Props) {
           aria-label="Close"
           onClick={requestClose}
         >
-          <span aria-hidden="true">&times;</span>
+          {/* Inline SVG X — drawn from a square viewBox so the visible
+              mark sits at the exact geometric center of the button. The
+              text glyph (`&times;`) in Cormorant Garamond renders low
+              in its em box, which offset the visible × from the center
+              of the hit target. */}
+          <svg
+            className="modal-close__icon"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+            focusable="false"
+          >
+            <path
+              d="M6 6 L18 18 M18 6 L6 18"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+            />
+          </svg>
         </button>
         {isLookBook ? (
           <img

@@ -90,9 +90,16 @@ export function Scene({ activeLink, origin, onClose }: Props) {
     // first event as the "neutral" pose so the effect is relative to however
     // the user is naturally holding the device, then map ±TILT_RANGE degrees
     // of deviation onto the same -1..1 range the cursor uses on desktop.
+    // The baseline then slowly drifts toward the current pose (exponential
+    // decay with BASELINE_RECENTER_TC_MS as the time constant) so however
+    // the user ends up holding the phone becomes the new neutral within a
+    // couple seconds. Quick tilts still produce parallax; only sustained
+    // poses get absorbed into the baseline.
     const TILT_RANGE_DEG = 18
+    const BASELINE_RECENTER_TC_MS = 2200
     let baselineBeta: number | null = null
     let baselineGamma: number | null = null
+    let lastOrientationTime: number | null = null
 
     const getScreenAngle = (): number => {
       const angle = window.screen?.orientation?.angle
@@ -105,11 +112,20 @@ export function Scene({ activeLink, origin, onClose }: Props) {
     const handleOrientation = (event: DeviceOrientationEvent) => {
       const gamma = event.gamma ?? 0 // left/right tilt, degrees
       const beta = event.beta ?? 0 // front/back tilt, degrees
+      const now = performance.now()
       if (baselineBeta === null || baselineGamma === null) {
         baselineBeta = beta
         baselineGamma = gamma
+        lastOrientationTime = now
         return
       }
+      // Clamp dt so a backgrounded tab doesn't snap the baseline forward.
+      const dt = lastOrientationTime === null ? 0 : Math.min(200, now - lastOrientationTime)
+      lastOrientationTime = now
+      const k = 1 - Math.exp(-dt / BASELINE_RECENTER_TC_MS)
+      baselineBeta += (beta - baselineBeta) * k
+      baselineGamma += (gamma - baselineGamma) * k
+
       const dGamma = gamma - baselineGamma
       const dBeta = beta - baselineBeta
 
@@ -136,6 +152,7 @@ export function Scene({ activeLink, origin, onClose }: Props) {
     const resetBaseline = () => {
       baselineBeta = null
       baselineGamma = null
+      lastOrientationTime = null
     }
 
     const isTouch = window.matchMedia('(hover: none)').matches

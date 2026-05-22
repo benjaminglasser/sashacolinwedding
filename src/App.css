@@ -66,7 +66,7 @@
   flex-wrap: wrap;
   justify-content: center;
   align-items: center;
-  gap: 4px clamp(16px, 5vw, 80px);
+  gap: 6px clamp(40px, 6vw, 96px);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -80,7 +80,7 @@
   padding: 4px 4px;
   font-family: var(--heading);
   font-style: italic;
-  font-size: clamp(17px, 1.5vw, 22px);
+  font-size: clamp(22px, 1.8vw, 28px);
   font-weight: 400;
   letter-spacing: 0.005em;
   text-transform: none;
@@ -492,7 +492,7 @@
 .modal-body {
   margin: 0;
   font-family: var(--sans);
-  font-size: clamp(15px, 1.05vw, 17px);
+  font-size: clamp(17px, 1.2vw, 19px);
   line-height: 1.6;
   color: var(--modal-ink-soft);
 }
@@ -506,7 +506,7 @@
 .modal-lead {
   margin: 0;
   font-family: var(--heading);
-  font-size: clamp(17px, 1.2vw, 20px);
+  font-size: clamp(19px, 1.35vw, 22px);
   font-style: italic;
   line-height: 1.5;
   color: var(--modal-ink-soft);
@@ -552,7 +552,7 @@
 .modal-note {
   margin: 0;
   font-family: var(--sans);
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.5;
   color: #7a5c3a;
 }
@@ -589,7 +589,7 @@
 .modal-schedule__description {
   margin: 0;
   font-family: var(--sans);
-  font-size: clamp(14px, 1vw, 16px);
+  font-size: clamp(16px, 1.15vw, 18px);
   line-height: 1.5;
   color: var(--modal-ink-soft);
 }
@@ -674,20 +674,18 @@
   top: 10px;
   right: 10px;
   /* Generous 56px hit target — well above the 44px minimum so even
-     off-center taps register. Visible glyph stays tucked inside a
-     faint ring so users can see exactly where the button is. */
+     off-center taps register. The inner SVG sits at the exact center
+     of this box, so the visible × and the hit-target center coincide. */
   width: 56px;
   height: 56px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   appearance: none;
-  background: rgba(184, 138, 71, 0.1);
+  background: transparent;
   border: 0;
   border-radius: 50%;
-  font-family: var(--heading);
-  font-size: 32px;
-  line-height: 1;
+  line-height: 0;
   color: #8b6a3a;
   cursor: pointer;
   pointer-events: auto;
@@ -706,6 +704,17 @@
   position: absolute;
   inset: -10px;
   border-radius: 50%;
+}
+
+/* Inline X icon — drawn from a square viewBox so the visible mark is
+   geometrically centered in the 56px hit target. Replaces the text
+   `&times;`, which renders low in Cormorant Garamond's em box and
+   visually offsets the × from the center of the button. */
+.modal-close__icon {
+  display: block;
+  width: 22px;
+  height: 22px;
+  fill: none;
 }
 
 .modal-close:hover,
@@ -876,6 +885,22 @@
     width: min(82vw, 540px);
     padding: 36px 32px;
   }
+  /* Header: same compact floating-cartouche treatment as mobile —
+     pulled in from the screen edges with extra clearance from the top,
+     bumped-up link size, and more breathing room between links so the
+     row wraps into a balanced shape (3 + 2 / 2 + 3) instead of 4 + 1. */
+  .header {
+    padding: 32px 40px 16px;
+  }
+  .header__nav {
+    padding: 10px 22px;
+  }
+  .header__link {
+    font-size: 24px;
+  }
+  .header__list {
+    gap: 12px 28px;
+  }
 }
 
 /* Phone breakpoint — tighten modal padding / font sizes for narrow viewports. */
@@ -890,10 +915,10 @@
     font-size: 40px;
   }
   .modal-body {
-    font-size: 15px;
+    font-size: 17px;
   }
   .modal-lead {
-    font-size: 16px;
+    font-size: 18px;
   }
   .modal-contact {
     padding: 16px 16px;
@@ -927,7 +952,10 @@
        title, but still comfortably above the 44px hit-target floor. */
     width: 52px;
     height: 52px;
-    font-size: 30px;
+  }
+  .modal-close__icon {
+    width: 20px;
+    height: 20px;
   }
 }
 
