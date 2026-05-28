@@ -52,6 +52,18 @@ export function SparkleCursor() {
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     if (reduceMotion) return
 
+    // Touch-only devices don't have a hovering cursor to trail off of, and
+    // the click-burst alone isn't worth the cost of a perpetually running
+    // canvas + RAF loop + per-frame shadowBlur draw on the GPUs in these
+    // devices (the single most expensive 2D-canvas idiom we use). Skip the
+    // effect entirely so phones and tablets don't pay that tax.
+    //
+    // `(hover: none) and (pointer: coarse)` is the conservative both-sides
+    // check that targets true touchscreens and excludes things like hybrid
+    // laptops where the user is still moving a real cursor.
+    const isTouch = window.matchMedia('(hover: none) and (pointer: coarse)').matches
+    if (isTouch) return
+
     const canvas = canvasRef.current
     if (!canvas) return
 
@@ -59,6 +71,11 @@ export function SparkleCursor() {
     if (!ctx) return
 
     const dpr = Math.min(window.devicePixelRatio || 1, 2)
+    // Hard cap on simultaneous particles. The trail emitter is already
+    // throttled, but a frantic mouse + a rapid-click burst can stack
+    // hundreds at once. Cap so the per-frame work stays bounded — any
+    // particle beyond this just gets dropped before it's created.
+    const MAX_PARTICLES = 220
     const resize = () => {
       const w = window.innerWidth
       const h = window.innerHeight
@@ -81,6 +98,7 @@ export function SparkleCursor() {
       SPARKLE_COLORS[(Math.random() * SPARKLE_COLORS.length) | 0]
 
     const emitSparkle = (x: number, y: number) => {
+      if (particles.length >= MAX_PARTICLES) return
       const angle = Math.random() * Math.PI * 2
       const speed = 10 + Math.random() * 28
       particles.push({
@@ -102,6 +120,7 @@ export function SparkleCursor() {
     const emitBurst = (x: number, y: number) => {
       const sparkCount = 22 + ((Math.random() * 10) | 0)
       for (let i = 0; i < sparkCount; i++) {
+        if (particles.length >= MAX_PARTICLES) break
         const angle = (i / sparkCount) * Math.PI * 2 + Math.random() * 0.5
         const speed = 140 + Math.random() * 220
         particles.push({
@@ -171,7 +190,11 @@ export function SparkleCursor() {
     // Draw a 4-point sparkle star centered at (0,0). The glow is
     // created via shadowBlur in the same color, which the canvas
     // 'lighter' blend mode turns into a soft bloom against any
-    // background.
+    // background. ShadowBlur is the single most expensive 2D-canvas
+    // operation per particle, so we cap the radius to a value that
+    // still gives a soft halo on the largest sparkles without paying
+    // for an enormous blur kernel on laptops with weak integrated GPUs.
+    const MAX_SHADOW_BLUR = 12
     const drawSparkle = (
       x: number,
       y: number,
@@ -186,7 +209,7 @@ export function SparkleCursor() {
       ctx.globalAlpha = alpha
       ctx.fillStyle = color
       ctx.shadowColor = color
-      ctx.shadowBlur = r * 4
+      ctx.shadowBlur = Math.min(MAX_SHADOW_BLUR, r * 3)
       ctx.beginPath()
       ctx.moveTo(0, -r)
       ctx.lineTo(r * 0.28, -r * 0.28)

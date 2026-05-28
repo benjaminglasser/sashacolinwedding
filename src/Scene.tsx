@@ -4,52 +4,73 @@ import type { ModalOrigin } from './Header'
 import { Modal } from './Modal'
 
 type Layer = {
-  src: string
+  /** Base path stem in /assets, without extension (e.g. "02-arch"). We derive
+   *  the actual urls from this so each entry stays compact. The PNG/JPG at
+   *  `${stem}.${fallbackExt}` is the universal fallback, `${stem}.webp` is
+   *  the desktop WebP, and `${stem}-sm.webp` is the phone-sized WebP. */
+  stem: string
+  /** Extension of the fallback raster (the original PNG/JPG that already lives
+   *  on disk). WebP variants are always `.webp`. */
+  fallbackExt: 'png' | 'jpg'
   alt: string
   magnitude: number
   backdrop?: boolean
   /** Extra bleed below the viewport, in vh, on top of the scene default. */
   dropVh?: number
   /**
-   * Optional alternate source for desktop-class viewports (wide, hover-capable).
-   * When present, rendered through a <picture> element so phones and tablets
-   * keep using {@link Layer.src}.
+   * Optional alternate stem for desktop-class viewports (wide, hover-capable).
+   * When present, used as the source for the WIDE_MEDIA <source> tags so the
+   * wide-framing crop is served on widescreen monitors and falls through to
+   * the regular `stem` everywhere else.
    */
-  wideSrc?: string
+  wideStem?: string
+  /** Fallback extension of the wide variant, if different from `fallbackExt`. */
+  wideFallbackExt?: 'png' | 'jpg'
 }
 
 // Triggers the wide-aspect desktop variant. Phones (any orientation) and iPads
 // (portrait or 4:3 landscape) fall through to the default src.
 const WIDE_MEDIA = '(min-width: 1024px) and (min-aspect-ratio: 3/2)'
+// Below this width we prefer the smaller WebP variant so phones and small
+// tablets don't download the full-resolution scene art.
+const SMALL_MEDIA = '(max-width: 900px)'
 
 const LAYERS: Layer[] = [
   {
-    src: '/assets/01-bg-house.png',
-    wideSrc: '/assets/01-bg-house-wide.jpg',
+    stem: '01-bg-house',
+    fallbackExt: 'png',
+    wideStem: '01-bg-house-wide',
+    wideFallbackExt: 'jpg',
     alt: '',
     magnitude: 0,
     backdrop: true,
   },
-  { src: '/assets/02-arch.png', alt: '', magnitude: 14 },
+  { stem: '02-arch', fallbackExt: 'png', alt: '', magnitude: 14 },
   {
-    src: '/assets/03-couple.png',
-    wideSrc: '/assets/03-couple-wide.png',
+    stem: '03-couple',
+    fallbackExt: 'png',
+    wideStem: '03-couple-wide',
+    wideFallbackExt: 'png',
     alt: 'Sasha and Colin',
     magnitude: 22,
   },
-  { src: '/assets/04-puppy.png', alt: '', magnitude: 32, dropVh: 9 },
+  { stem: '04-puppy', fallbackExt: 'png', alt: '', magnitude: 32, dropVh: 9 },
 ]
 
-const STAGGER_MS = 120
-const ENTRANCE_DELAY_MS = 150
+const STAGGER_MS = 550
+const ENTRANCE_DELAY_MS = 200
 
 type Props = {
   activeLink: string | null
   origin: ModalOrigin | null
   onClose: () => void
+  /** Fired the moment the user initiates the modal close gesture (before the
+   *  exit animation runs). Lets parent components react in parallel with the
+   *  modal's own retreat (e.g. fading the header back in). */
+  onClosingStart?: () => void
 }
 
-export function Scene({ activeLink, origin, onClose }: Props) {
+export function Scene({ activeLink, origin, onClose, onClosingStart }: Props) {
   const stageRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
@@ -182,24 +203,63 @@ export function Scene({ activeLink, origin, onClose }: Props) {
           '--drop': `${layer.dropVh ?? 0}vh`,
           zIndex: index + 1,
         } as CSSProperties
+        const fallbackSrc = `/assets/${layer.stem}.${layer.fallbackExt}`
+        // The backdrop is the LCP element; mark it eager + high priority so
+        // it starts downloading immediately and the browser doesn't wait for
+        // the rest of the scene to be parsed. The other layers can decode
+        // async to keep the main thread free during the entrance animation.
+        const isBackdrop = !!layer.backdrop
         return (
           <div
-            key={layer.src}
-            className={`layer${layer.backdrop ? ' layer--backdrop' : ''}`}
+            key={layer.stem}
+            className={`layer${isBackdrop ? ' layer--backdrop' : ''}`}
             style={style}
           >
-            {layer.wideSrc ? (
-              <picture>
-                <source media={WIDE_MEDIA} srcSet={layer.wideSrc} />
-                <img className="layer__img" src={layer.src} alt={layer.alt} draggable={false} />
-              </picture>
-            ) : (
-              <img className="layer__img" src={layer.src} alt={layer.alt} draggable={false} />
-            )}
+            <picture>
+              {layer.wideStem && (
+                // Wide desktop framing: prefer WebP, fall back to the original
+                // PNG/JPG for browsers without WebP support.
+                <>
+                  <source
+                    media={WIDE_MEDIA}
+                    type="image/webp"
+                    srcSet={`/assets/${layer.wideStem}.webp`}
+                  />
+                  <source
+                    media={WIDE_MEDIA}
+                    srcSet={`/assets/${layer.wideStem}.${layer.wideFallbackExt ?? layer.fallbackExt}`}
+                  />
+                </>
+              )}
+              {/* Phones/small tablets: the trimmed -sm WebP, then the regular
+                  WebP for everyone else who can decode WebP. */}
+              <source
+                media={SMALL_MEDIA}
+                type="image/webp"
+                srcSet={`/assets/${layer.stem}-sm.webp`}
+              />
+              <source type="image/webp" srcSet={`/assets/${layer.stem}.webp`} />
+              <img
+                className="layer__img"
+                src={fallbackSrc}
+                alt={layer.alt}
+                draggable={false}
+                decoding={isBackdrop ? 'sync' : 'async'}
+                loading="eager"
+                {...(isBackdrop ? { fetchPriority: 'high' as const } : {})}
+              />
+            </picture>
           </div>
         )
       })}
-      {activeLink && <Modal label={activeLink} origin={origin} onClose={onClose} />}
+      {activeLink && (
+        <Modal
+          label={activeLink}
+          origin={origin}
+          onClose={onClose}
+          onClosingStart={onClosingStart}
+        />
+      )}
     </div>
   )
 }

@@ -1,9 +1,15 @@
+/* `font-display: block` keeps text invisible (rather than showing a fallback
+   immediately like `swap` does) for the browser's short block period — about
+   3 s in Chromium / Safari. Paired with the FontSplash gate in App.tsx, this
+   means the first time any text using these faces appears on screen, it is
+   already in the real face. Both files are also <link rel="preload">'d in
+   index.html so they start downloading before the CSS parser hits this rule. */
 @font-face {
   font-family: 'Enchanted Land';
   src: url('/fonts/enchanted-land.otf') format('opentype');
   font-weight: 400;
   font-style: normal;
-  font-display: swap;
+  font-display: block;
 }
 
 @font-face {
@@ -11,7 +17,7 @@
   src: url('/fonts/piston-black.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
-  font-display: swap;
+  font-display: block;
 }
 
 :root {

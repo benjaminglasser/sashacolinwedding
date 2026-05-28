@@ -4,12 +4,60 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#fbf2dd" />
+
+    <!-- Preconnect to Google Fonts so the TLS + DNS handshake overlaps with
+         the HTML parse rather than serializing after it. `crossorigin` on
+         the gstatic preconnect is required because the woff2 files are
+         fetched with CORS. -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <!-- Preload the two local fonts so they start downloading the moment
+         the HTML is parsed, instead of waiting for the CSS parser to
+         discover the @font-face rules. Crossorigin is required even for
+         same-origin font preloads because <link rel="preload" as="font">
+         is always fetched in CORS mode. -->
+    <link
+      rel="preload"
+      href="/fonts/piston-black.ttf"
+      as="font"
+      type="font/ttf"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="/fonts/enchanted-land.otf"
+      as="font"
+      type="font/otf"
+      crossorigin
+    />
+
+    <!-- Preload the Google Fonts stylesheet as a stylesheet so the browser
+         starts fetching the woff2 files referenced inside it as soon as
+         possible. (`display=swap` stays in the URL — paired with the
+         FontSplash gate in App.tsx it just means: don't block render if
+         these never arrive.) -->
     <link
       href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,400&family=Pinyon+Script&display=swap"
       rel="stylesheet"
     />
+
+    <!-- Preload the LCP backdrop image. Phones get the small WebP, larger
+         viewports the full WebP, and browsers without WebP support fall
+         back to the raster in <picture>. Using imagesrcset/imagesizes lets
+         the preload scanner match the eventual <picture> media queries
+         without us hard-coding a single resource. -->
+    <link
+      rel="preload"
+      as="image"
+      type="image/webp"
+      href="/assets/01-bg-house.webp"
+      imagesrcset="/assets/01-bg-house-sm.webp 1100w, /assets/01-bg-house.webp 1800w"
+      imagesizes="100vw"
+      fetchpriority="high"
+    />
+
     <title>Sasha &amp; Colin</title>
   </head>
   <body>

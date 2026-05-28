@@ -25,39 +25,87 @@
   padding: clamp(14px, 2.4vw, 26px) clamp(8px, 1.5vw, 16px);
   pointer-events: none;
   opacity: 1;
-  /* `backwards` keeps the header invisible during the 1100ms delay before
-     the intro fade-in animation runs, while leaving the resting opacity
-     as `1` so the modal-open class below can transition it back out. */
-  animation: headerFadeIn 900ms ease-out 1100ms backwards;
+  /* Hold the header invisible until after the scene's last layer has
+     finished its fade-in, so the nav reads as a final flourish settling
+     onto the finished painting. The last layer starts at
+     ENTRANCE_DELAY_MS + 3 * STAGGER_MS = 1850ms and fades in over 600ms
+     (finishing at 2450ms), so we delay the header to 2500ms. `backwards`
+     keeps the element invisible during that hold while leaving the
+     resting opacity as `1` so the modal-open class below can transition
+     it back out. */
+  animation: headerFadeIn 900ms ease-out 2500ms backwards;
   transition: opacity 320ms ease, transform 320ms ease;
 }
 
 /* While any modal is open we fade the header out so it doesn't compete
-   with the modal for attention. The :not() check means the header
-   starts fading back in the instant the user dismisses the modal, in
-   parallel with the modal's retreat animation, instead of waiting for
-   it to unmount. */
-.page:has(.modal-card:not(.modal-card--closing)) .header {
+   with the modal for attention. The `.page--modal-open` class is driven
+   from React state and is toggled OFF as soon as the user requests close,
+   so the header begins fading back in in parallel with the modal's
+   retreat animation — same visual cadence the original `:has()` selector
+   produced, but without the cost of a full :has invalidation every time
+   `.modal-card--closing` toggles. */
+.page--modal-open .header {
   opacity: 0;
   transform: translateY(-6px);
 }
 
-.page:has(.modal-card:not(.modal-card--closing)) .header__link {
+/* Drop pointer-events on the entire nav (not just the links) while a
+   modal is open. The header sits in the root stacking context at
+   `z-index: 50`, while the modal-card lives inside `.scene`'s
+   stacking context (z-index auto = 0 at root) — so even though the
+   modal's `z-index: 60` is higher numerically, the whole .scene
+   subtree paints UNDER the header at the root level. With the header
+   invisible (opacity: 0), the empty space inside `.header__nav` /
+   `.header__list` was silently swallowing any click that overlapped
+   the nav's footprint — most notably the modal's close X, which sits
+   in the top-right corner exactly under the header's wrapped link
+   rows. Killing pointer-events on the whole nav (not just the links)
+   makes every pixel of the invisible header transparent to clicks. */
+.page--modal-open .header__nav {
   pointer-events: none;
 }
 
 .header__nav {
   width: auto;
-  max-width: 100%;
+  /* Hug the rendered link rows instead of stretching across the
+     viewport. `width: auto` on a flex container computes its intrinsic
+     size from the *single-line* max-content of all children, which is
+     much wider than any wrapped row, so without a `max-width` ceiling
+     the cartouche expands to fill the header even though the forced
+     4 + 3 layout only needs ~820–1040px. The clamp tracks the natural
+     width of the widest forced row (line 1: 4 links + 3 ornaments +
+     gaps) across the desktop viewport range. Tablet and phone
+     breakpoints override this with their own tighter fixed values. */
+  max-width: clamp(820px, 67vw, 1040px);
   padding: 10px clamp(24px, 4vw, 56px);
-  background: rgba(251, 242, 221, 0.82);
-  -webkit-backdrop-filter: blur(14px) saturate(1.1);
-  backdrop-filter: blur(14px) saturate(1.1);
+  /* Bumped opacity from 0.82 -> 0.9 so the parchment background stays
+     readable even when the backdrop-filter falls back to nothing (Safari
+     iOS occasionally drops backdrop blur during heavy compositing) and so
+     the smaller 8px blur below still produces a clean cartouche. */
+  background: rgba(251, 242, 221, 0.9);
+  /* Halved blur radius (14px -> 8px) — on mobile the larger kernel was a
+     real per-frame cost while the header animated opacity during modal
+     open/close. 8px still reads as a clear blur on top of the scene. */
+  -webkit-backdrop-filter: blur(8px) saturate(1.1);
+  backdrop-filter: blur(8px) saturate(1.1);
   border-radius: 18px;
   box-shadow:
     inset 0 0 0 1px rgba(184, 138, 71, 0.32),
     0 6px 20px rgba(20, 10, 30, 0.18);
   pointer-events: auto;
+}
+
+/* On phones — where the backdrop blur is most expensive and the parchment
+   cartouche fills a wide band of the viewport — we drop the blur entirely
+   and lean on a fully-opaque parchment background. The header still reads
+   as the same illuminated cartouche; we just stop paying the per-frame blur
+   tax on the GPUs in mobile devices. */
+@media (max-width: 640px) {
+  .header__nav {
+    background: #fbf2dd;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
 }
 
 .header__list {
@@ -66,10 +114,87 @@
   flex-wrap: wrap;
   justify-content: center;
   align-items: center;
-  gap: 6px clamp(40px, 6vw, 96px);
+  /* Column gap is half what it used to be because every other slot in
+     the row is now a `.header__separator` ornament. Sum of gap +
+     ornament + gap between two links lands in the same ballpark as the
+     original ~clamp(40px, 6vw, 96px) so the row's rhythm is preserved. */
+  gap: 6px clamp(18px, 2.6vw, 40px);
   margin: 0;
   padding: 0;
   list-style: none;
+}
+
+/* Tiny gold star + sprig ornament that sits between header links. Same
+   four-pointed star shape as the flourishes under the modal titles and
+   intro, shrunk down with stub sprigs on either side so it reads as a
+   divider mark rather than a heading. */
+.header__separator {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 8px;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 26 8' fill='none' stroke='%23b88a47' stroke-linecap='round'><path d='M2 4 H8' stroke-width='0.9'/><path d='M18 4 H24' stroke-width='0.9'/><path d='M13 0.6 L14.3 3 L16 4 L14.3 5 L13 7.4 L11.7 5 L10 4 L11.7 3 Z' fill='%23b88a47' stroke='none'/></svg>");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  pointer-events: none;
+  opacity: 0.85;
+}
+
+/* Wrap balancing
+   ------------------------------------------------------------------
+   Without help, the row collapses to "6 links on top, 1 stray
+   Questions on the bottom" with the orphan ornament hanging off the
+   end of line 1, AND the cartouche stretches to its `max-width:
+   100%` because the content is too wide to fit on one line. We force
+   a balanced 4 + 3 split by promoting the 4th gold ornament — the
+   separator between "Activities" and "Registry", which is the 8th
+   child of the list — into a zero-height, full-width flex spacer.
+   Flexbox then has to flow everything after it onto a new row, so:
+
+     1. The menu always wraps as two deliberate groups rather than
+        dribbling out one orphan link.
+     2. The widest row (line 1, 4 links) is comfortably narrower than
+        the parent, so the cartouche's `width: auto` lets the
+        parchment shrink down to hug the links instead of stretching
+        out to fill the header.
+
+   No upper bound: we'd rather always show the tidy 4 + 3 cartouche
+   than ever expose the orphan wrap at any viewport width. The
+   single-row layout is intentionally retired.
+
+   The phone-side rule does the same trick on children 6 and 10 for
+   a 3 + 2 + 2 stack, since four links wouldn't comfortably fit on a
+   single phone-width row. */
+@media (min-width: 768px) {
+  .header__list > li.header__separator:nth-child(8) {
+    flex: 0 0 100%;
+    width: 100%;
+    height: 0;
+    margin: 0;
+    background: none;
+    opacity: 0;
+  }
+}
+
+/* Phone wrap: 3 + 2 + 2. Same zero-height full-width spacer trick as
+   the desktop rule above, but applied to the 3rd and 5th ornaments
+   so the menu lands as three balanced rows. Size overrides (font,
+   gap, separator, cartouche padding, cartouche max-width) live in
+   the phone block at the bottom of the file so they cascade *after*
+   the tablet block; the structural break rules below use the
+   `.header__list > li:nth-child(N)` selector, which has higher
+   specificity than the tablet's bare `.header__list`/`.header__separator`
+   rules, so they win wherever they land. */
+@media (max-width: 767px) {
+  .header__list > li.header__separator:nth-child(6),
+  .header__list > li.header__separator:nth-child(10) {
+    flex: 0 0 100%;
+    width: 100%;
+    height: 0;
+    margin: 0;
+    background: none;
+    opacity: 0;
+  }
 }
 
 .header__link {
@@ -140,8 +265,68 @@
     opacity: 1;
     transition: opacity 200ms ease;
   }
-  .page:has(.modal-card:not(.modal-card--closing)) .header {
+  .page--modal-open .header {
     transform: none;
+  }
+}
+
+/* Font-loading splash
+   ------------------------------------------------------------------
+   Shown above everything else while web fonts are still loading so the
+   intro's title + date never first render in a fallback face. Reuses
+   the parchment gradient + gold inset frame from `.intro` so the
+   transition into the real intro is just a content cross-fade with no
+   visible layout shift. A single small pulsing dot stands in for the
+   absent text content. */
+.font-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 110;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(120% 70% at 50% 0%, rgba(255, 226, 196, 0.55) 0%, rgba(255, 226, 196, 0) 55%),
+    radial-gradient(120% 80% at 50% 100%, rgba(232, 196, 214, 0.42) 0%, rgba(232, 196, 214, 0) 65%),
+    linear-gradient(180deg, #fbf2dd 0%, #f4e3c2 100%);
+  outline: 1px solid rgba(184, 138, 71, 0.45);
+  outline-offset: -28px;
+  /* Brief fade-in covers the first paint flash. */
+  animation: fontSplashIn 220ms ease-out both;
+}
+
+.font-splash__dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: rgba(184, 138, 71, 0.75);
+  box-shadow: 0 0 12px rgba(184, 138, 71, 0.35);
+  animation: fontSplashPulse 1400ms ease-in-out infinite;
+}
+
+@keyframes fontSplashIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fontSplashPulse {
+  0%, 100% { transform: scale(0.75); opacity: 0.55; }
+  50% { transform: scale(1.15); opacity: 1; }
+}
+
+@media (max-width: 640px) {
+  .font-splash {
+    outline-offset: -16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .font-splash {
+    animation: none;
+  }
+  .font-splash__dot {
+    animation: none;
+    opacity: 0.85;
   }
 }
 
@@ -359,8 +544,8 @@
   transform-origin: 50% 100%;
   backface-visibility: hidden;
   animation:
-    layerFadeIn 360ms ease-out var(--delay, 0ms) forwards,
-    layerPop 1050ms cubic-bezier(0.3, 1.55, 0.55, 1) var(--delay, 0ms) forwards;
+    layerFadeIn 600ms ease-out var(--delay, 0ms) forwards,
+    layerPop 1750ms cubic-bezier(0.3, 1.55, 0.55, 1) var(--delay, 0ms) forwards;
 }
 
 .layer--backdrop .layer__img {
@@ -431,10 +616,18 @@
   --modal-gold-soft: rgba(184, 138, 71, 0.55);
   --modal-ink: #2c1830;
   --modal-ink-soft: #4a3140;
+  /* `--modal-gap` is the breathing room between the card and the
+     viewport. It's the same value on top/bottom and left/right so the
+     modal sits perfectly centered with equal margin on all four sides.
+     `--modal-pad` is the matching inner padding so the content also
+     breathes evenly inside the card. Both are overridden in the
+     responsive blocks below to scale with smaller viewports. */
+  --modal-gap: 48px;
+  --modal-pad: 48px;
   position: fixed;
   top: 50%;
   left: 50%;
-  width: clamp(420px, 56vw, 620px);
+  width: calc(100vw - 2 * var(--modal-gap));
   /* The card itself no longer scrolls — `.modal-card__body` below is
      the scroll container. Keeping the card non-scrollable is what lets
      the absolutely-positioned close button stay anchored to the card
@@ -471,12 +664,48 @@
    (title, content, schedule items, …) lives in here. The max-height +
    padding values match the ones previously on .modal-card. */
 .modal-card__body {
-  max-height: calc(100svh - 80px);
+  max-height: calc(100svh - 2 * var(--modal-gap));
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 48px 48px 44px;
+  padding: var(--modal-pad);
   /* iOS momentum scrolling — keeps the schedule list flickable. */
   -webkit-overflow-scrolling: touch;
+  /* Thin, themed scrollbar. Native scrollbars are painted by the
+     browser above all DOM (they ignore z-index), so a default ~15px
+     scrollbar at the right edge of the body silently sits on top of
+     the right ~9px of the close button's hit zone and steals taps —
+     which is exactly the "X doesn't always work when there's a
+     scrollbar" symptom this aims to fix. A 8px scrollbar + a stable
+     reserved gutter pairs with the inset `.modal-close` position
+     below so the full 64x64 hit target is always clear of the
+     scrollbar, whether the bar is currently showing or not. */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(184, 138, 71, 0.55) transparent;
+  scrollbar-gutter: stable;
+}
+
+.modal-card__body::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.modal-card__body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* `border: 2px solid transparent` + `background-clip: padding-box`
+   gives the thumb a built-in transparent margin so it visually sits
+   inside the 8px gutter as a slimmer pill rather than filling edge
+   to edge. */
+.modal-card__body::-webkit-scrollbar-thumb {
+  background-color: rgba(184, 138, 71, 0.55);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.modal-card__body::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(184, 138, 71, 0.78);
 }
 
 .modal-title {
@@ -540,10 +769,10 @@
 .modal-eyebrow {
   font-family: var(--heading);
   font-style: italic;
-  font-size: 14px;
-  font-weight: 500;
-  letter-spacing: 0.02em;
-  color: #8b6a3a;
+  font-size: clamp(16px, 1.15vw, 18px);
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: #5a3214;
 }
 
 .modal-contact__link {
@@ -572,7 +801,8 @@
   color: #7a5c3a;
 }
 
-.modal-schedule {
+.modal-schedule,
+.modal-stays {
   list-style: none;
   margin: 0;
   padding: 0;
@@ -581,7 +811,8 @@
   gap: 16px;
 }
 
-.modal-schedule__item {
+.modal-schedule__item,
+.modal-stays__item {
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -591,12 +822,22 @@
   background: rgba(255, 240, 212, 0.55);
 }
 
+.modal-stays__title {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: clamp(30px, 3vw, 40px);
+  line-height: 1.1;
+  letter-spacing: 0.005em;
+  color: var(--modal-ink);
+}
+
 .modal-schedule__title {
   margin: 0;
   font-family: var(--display);
   font-weight: 400;
-  font-size: clamp(20px, 1.9vw, 26px);
-  line-height: 1.15;
+  font-size: clamp(30px, 3vw, 40px);
+  line-height: 1.1;
   letter-spacing: 0.005em;
   color: var(--modal-ink);
 }
@@ -607,6 +848,228 @@
   font-size: clamp(16px, 1.15vw, 18px);
   line-height: 1.5;
   color: var(--modal-ink-soft);
+}
+
+.modal-schedule__venue,
+.modal-stays__venue {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 2px;
+}
+
+.modal-schedule__venue-name,
+.modal-stays__venue-name {
+  font-family: var(--heading);
+  font-size: clamp(17px, 1.25vw, 20px);
+  font-weight: 600;
+  letter-spacing: 0.005em;
+  color: var(--modal-ink);
+}
+
+.modal-schedule__address,
+.modal-stays__address {
+  font-family: var(--sans);
+  font-size: clamp(14px, 1vw, 16px);
+  line-height: 1.45;
+  color: var(--modal-ink-soft);
+}
+
+/* Stays — accommodations card. Shares the parchment-card treatment with
+   the schedule items above, with a few extras for the hotel description,
+   phone number link, CTA button, and trailing note. */
+.modal-stays__phone {
+  margin-top: 4px;
+  font-family: var(--heading);
+  font-size: clamp(15px, 1.1vw, 17px);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: #3f6b48;
+  text-decoration: none;
+  transition: color 180ms ease;
+}
+
+.modal-stays__phone:hover,
+.modal-stays__phone:focus-visible {
+  color: #a04a6d;
+  outline: none;
+}
+
+.modal-stays__detail {
+  margin: 6px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid rgba(140, 95, 50, 0.22);
+  font-family: var(--sans);
+  font-size: clamp(15px, 1.1vw, 17px);
+  line-height: 1.55;
+  color: var(--modal-ink-soft);
+}
+
+/* CTA inside a stay card: pull it in tighter than the centered default
+   used in the Registry modal, and anchor it to the left edge so it sits
+   in the same column as the eyebrow / title / description above instead
+   of floating, lonely, in the middle of the card. */
+.modal-stays__item .modal-button {
+  align-self: flex-start;
+  margin-top: 6px;
+  padding: 12px 26px;
+  font-size: clamp(16px, 1.2vw, 18px);
+}
+
+.modal-stays__note {
+  margin: 4px 0 0;
+  font-family: var(--sans);
+  font-size: clamp(13px, 0.95vw, 15px);
+  line-height: 1.55;
+  color: var(--modal-ink-soft);
+  font-style: italic;
+}
+
+/* Activities — grouped list of local things-to-do. Lighter visual weight
+   than the schedule / stays cards: smaller cards, a section heading per
+   category, and a subtle inline link rather than the full gold-flourished
+   modal-button so a dozen entries don't visually shout. */
+.modal-activities {
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+}
+
+.modal-activities__group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.modal-activities__heading {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: clamp(30px, 3vw, 40px);
+  line-height: 1.1;
+  letter-spacing: 0.005em;
+  color: var(--modal-ink);
+}
+
+.modal-activities__items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.modal-activities__item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px 18px;
+  border: 1px solid rgba(140, 95, 50, 0.28);
+  border-radius: 12px;
+  background: rgba(255, 240, 212, 0.55);
+}
+
+.modal-activities__title {
+  margin: 0;
+  font-family: var(--heading);
+  font-weight: 600;
+  font-size: clamp(17px, 1.25vw, 20px);
+  line-height: 1.25;
+  letter-spacing: 0.005em;
+  color: var(--modal-ink);
+}
+
+.modal-activities__detail {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: clamp(14px, 1vw, 16px);
+  line-height: 1.5;
+  color: var(--modal-ink-soft);
+}
+
+.modal-activities__link {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-top: 2px;
+  font-family: var(--heading);
+  font-style: italic;
+  font-size: clamp(14px, 1vw, 16px);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: #3f6b48;
+  text-decoration: none;
+  transition: color 180ms ease, transform 180ms ease;
+}
+
+.modal-activities__arrow {
+  display: inline-block;
+  transition: transform 220ms ease;
+}
+
+.modal-activities__link:hover,
+.modal-activities__link:focus-visible {
+  color: #a04a6d;
+  outline: none;
+}
+
+.modal-activities__link:hover .modal-activities__arrow,
+.modal-activities__link:focus-visible .modal-activities__arrow {
+  transform: translateX(3px);
+}
+
+.modal-schedule__events {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 14px 0 0;
+  border-top: 1px solid rgba(140, 95, 50, 0.22);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.modal-schedule__event {
+  display: grid;
+  grid-template-columns: 92px 1fr;
+  gap: 14px;
+  align-items: baseline;
+}
+
+.modal-schedule__time {
+  font-family: var(--heading);
+  font-style: italic;
+  font-size: clamp(17px, 1.25vw, 20px);
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: #5a3214;
+  white-space: nowrap;
+}
+
+.modal-schedule__event-text {
+  font-family: var(--sans);
+  font-size: clamp(15px, 1.1vw, 17px);
+  line-height: 1.5;
+  color: var(--modal-ink-soft);
+}
+
+.modal-schedule__notes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+  padding-top: 12px;
+  border-top: 1px dashed rgba(140, 95, 50, 0.28);
+}
+
+.modal-schedule__note {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: clamp(13px, 0.95vw, 15px);
+  line-height: 1.55;
+  color: var(--modal-ink-soft);
+  font-style: italic;
 }
 
 /* Aubergine pill skinned to match the rest of the modal — gold inset ring
@@ -664,8 +1127,12 @@
 .modal-button:focus-visible {
   color: #fbf3df;
   border-color: rgba(216, 168, 102, 0.95);
+  /* Brighter gold than the resting tone so the inset ring brightens on
+     hover. We deliberately don't wipe the outline here (e.g. with
+     `outline: none`) — doing so causes the outline-color transition to
+     run toward `currentcolor`, which then briefly flashes back as a
+     cream-colored ring on hover-release before settling to gold. */
   outline-color: rgba(216, 168, 102, 0.7);
-  outline: none;
   box-shadow: 0 10px 24px rgba(20, 10, 30, 0.4),
     inset 0 0 0 1px rgba(216, 168, 102, 0.55),
     inset 0 0 18px rgba(216, 168, 102, 0.18);
@@ -686,8 +1153,17 @@
 
 .modal-close {
   position: absolute;
-  top: 6px;
-  right: 6px;
+  /* Inset from the corner enough that the full 64x64 hit zone always
+     clears the body's scrollbar gutter (8px, reserved above with
+     `scrollbar-gutter: stable`). Native scrollbars are drawn by the
+     browser above all DOM and ignore z-index, so any pixels of the
+     button that overlap the gutter silently lose taps to the
+     scrollbar — that was the "X near the scrollbar doesn't work"
+     bug. 14px right keeps a 6px buffer between the gutter and the
+     button; 10px top mirrors that on the vertical axis so the
+     button still reads as anchored to the corner. */
+  top: 10px;
+  right: 14px;
   /* The button itself IS the hit target (no pseudo-element trickery).
      A flat 64x64 square — symmetric around the centered X icon — means
      iOS can't end up with an asymmetric hit zone the way it did when
@@ -743,17 +1219,80 @@
   outline: none;
 }
 
+/* Registry — narrow column variant. The registry copy is just a short
+   lead paragraph plus a single CTA button, so the default full-width
+   card looked oddly empty with the content stranded at the top. Cap
+   the width to a comfortable reading column and give the body a min
+   height so the card reads as a tall, centered slip rather than a
+   wide, mostly-empty banner. The content centers vertically inside
+   the taller body so the lead + CTA sit in the visual middle.
+
+   Extra inner padding: the Registry card has very little content
+   compared to the other modals, so we push `--modal-pad` well above
+   the shared default at every breakpoint. The result is more space
+   between the gold inset frame and the title / framed paragraph /
+   CTA, so the card reads as a deliberately spacious slip rather than
+   a wall of text nearly touching its own edges. The breakpoint
+   overrides below keep the absolute value scaled to the card's
+   available width: 56px on desktop where the card is 640px wide, ~44
+   on iPad, ~32 on phones. */
+.modal-card.modal-card--registry {
+  width: min(calc(100vw - 2 * var(--modal-gap)), 640px);
+  --modal-pad: 56px;
+}
+
+/* Questions — same narrow cap as Registry. The content (lead + email
+   contact + note) is light, so the wide default card made the column
+   feel oversized; matching Registry's 640px gives the card a tidy
+   slip-of-paper proportion. We don't bump --modal-pad like Registry
+   does because Questions still has enough content to fill the inner
+   width comfortably at the shared default padding. */
+.modal-card.modal-card--questions {
+  width: min(calc(100vw - 2 * var(--modal-gap)), 640px);
+}
+
+.modal-card--registry .modal-card__body {
+  min-height: min(480px, calc(100svh - 2 * var(--modal-gap)));
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+}
+
+/* Let the lead + CTA spread out along with the title instead of
+   clustering as a tight block in the middle. .modal-content fills
+   the remaining height and distributes its own children with even
+   space, so title / lead / button each get an equal share of the
+   taller card. */
+.modal-card--registry .modal-content {
+  flex: 1;
+  justify-content: space-around;
+}
+
+/* Accommodations — cap the card width so the two stay cards don't
+   stretch into long, hard-to-scan lines on wider viewports. The
+   content reads best at roughly 960px; below that we still let the
+   card breathe to the full --modal-gap-respecting width. */
+.modal-card.modal-card--accommodations,
+.modal-card.modal-card--activities,
+.modal-card.modal-card--schedule {
+  width: min(calc(100vw - 2 * var(--modal-gap)), 960px);
+}
+
 /* Look Book — full-bleed image variant. Higher specificity overrides
-   the responsive width/padding rules on .modal-card below. The
-   --lookbook-clear var is the breathing room we leave on the top and
-   bottom of the centered modal so it doesn't tuck under the header. */
+   the responsive width/padding rules on .modal-card below. Sizing
+   reuses the shared `--modal-gap` value so the breathing room around
+   the card matches the other modals at every breakpoint; the card is
+   the largest 814x1024 rectangle that fits inside the viewport minus
+   that gap on all four sides. */
 .modal-card.modal-card--lookbook {
-  --lookbook-clear: 120px;
-  width: min(92vw, calc((100svh - 2 * var(--lookbook-clear)) * 814 / 1024));
-  max-width: 92vw;
+  width: min(
+    calc(100vw - 2 * var(--modal-gap)),
+    calc((100svh - 2 * var(--modal-gap)) * 814 / 1024)
+  );
+  max-width: calc(100vw - 2 * var(--modal-gap));
   height: auto;
   aspect-ratio: 814 / 1024;
-  max-height: calc(100svh - 2 * var(--lookbook-clear));
+  max-height: calc(100svh - 2 * var(--modal-gap));
   padding: 0;
   background: transparent;
   border: 0;
@@ -922,38 +1461,94 @@
    asset breakpoint at 3:2). */
 @media (max-width: 1023px) {
   .modal-card {
-    width: min(82vw, 540px);
+    --modal-gap: 32px;
+    --modal-pad: 32px;
   }
-  .modal-card__body {
-    padding: 36px 32px;
+  /* Registry keeps its extra-spacious inner padding override scaled
+     down to the iPad-width card (see the base rule above for the
+     full reasoning). */
+  .modal-card.modal-card--registry {
+    --modal-pad: 44px;
   }
   /* Header: same compact floating-cartouche treatment as mobile —
-     pulled in from the screen edges with extra clearance from the top,
-     bumped-up link size, and more breathing room between links so the
-     row wraps into a balanced shape (3 + 2 / 2 + 3) instead of 4 + 1. */
+     pulled in from the screen edges with extra clearance from the top
+     and bumped-up link size. The actual line-split is now enforced by
+     the wrap-balancing media queries above the .header__separator
+     rule, so on tablets we land on a tidy 4 + 3 stack instead of a
+     lonely-orphan 6 + 1. */
   .header {
     padding: 32px 40px 16px;
   }
   .header__nav {
     padding: 10px 22px;
+    /* Tablet-fixed override of the desktop clamp — the widest forced
+       row at tablet sizes (4 links + 3 ornaments + gaps at the 24px
+       font / 22px sep / 12px gap below) lands around 720px, so 740
+       leaves just enough breathing room on either side for the cart
+       to hug the links instead of stretching to the iPad's full
+       inner width. */
+    max-width: 740px;
   }
   .header__link {
     font-size: 24px;
   }
   .header__list {
-    gap: 12px 28px;
+    gap: 12px 12px;
+  }
+  .header__separator {
+    width: 22px;
+    height: 7px;
+  }
+}
+
+/* Phone-header tightening
+   ------------------------------------------------------------------
+   These overrides intentionally live *after* the tablet block above
+   so they cascade correctly at viewports ≤767px (where both `@media
+   (max-width: 767px)` and `@media (max-width: 1023px)` match and the
+   later one wins). They shrink the font, separator, gap, and
+   cartouche padding so the forced 3 + 2 + 2 layout actually fits in
+   a phone-width row, and cap the cartouche `max-width` so the
+   parchment hugs the link rows instead of filling the viewport. */
+@media (max-width: 767px) {
+  .header {
+    padding: 14px 8px;
+  }
+  .header__nav {
+    padding: 8px 14px;
+    border-radius: 14px;
+    /* Roughly the widest 3-link row at phone sizes (line 1: RSVP +
+       Schedule + Accommodations) + the new cart padding. Anything
+       wider would let the cartouche stretch past the link rows;
+       anything narrower would force the 3-link row to sub-wrap and
+       leave another stranded ornament after Schedule. */
+    max-width: 420px;
+  }
+  .header__link {
+    font-size: clamp(16px, 4.5vw, 20px);
+  }
+  .header__list {
+    gap: 6px 10px;
+  }
+  .header__separator {
+    width: 18px;
+    height: 6px;
   }
 }
 
 /* Phone breakpoint — tighten modal padding / font sizes for narrow viewports. */
 @media (max-width: 640px) {
   .modal-card {
-    width: min(92vw, 480px);
+    --modal-gap: 16px;
+    --modal-pad: 22px;
     border-radius: 14px;
   }
-  .modal-card__body {
-    padding: 28px 22px 32px;
-    max-height: calc(100svh - 32px);
+  /* Registry keeps its extra-spacious inner padding override scaled
+     down to the phone-width card (see the base rule above for the
+     full reasoning). 32px on a ~340px card still leaves a comfortable
+     reading column inside the framed lead paragraph. */
+  .modal-card.modal-card--registry {
+    --modal-pad: 32px;
   }
   .modal-title {
     font-size: 40px;
@@ -970,14 +1565,64 @@
   .modal-contact__link {
     font-size: 20px;
   }
-  .modal-schedule__item {
+  .modal-schedule__item,
+  .modal-stays__item {
     padding: 16px 16px;
   }
+  .modal-stays__title {
+    font-size: 30px;
+  }
   .modal-schedule__title {
-    font-size: 22px;
+    font-size: 30px;
   }
   .modal-schedule__description {
     font-size: 14px;
+  }
+  .modal-schedule__venue-name,
+  .modal-stays__venue-name {
+    font-size: 17px;
+  }
+  .modal-schedule__address,
+  .modal-stays__address {
+    font-size: 14px;
+  }
+  .modal-stays__phone,
+  .modal-stays__detail {
+    font-size: 15px;
+  }
+  .modal-stays__note {
+    font-size: 13px;
+  }
+  .modal-stays__item .modal-button {
+    padding: 12px 22px;
+    font-size: 16px;
+  }
+  .modal-activities {
+    gap: 22px;
+  }
+  .modal-activities__heading {
+    font-size: 30px;
+  }
+  .modal-activities__item {
+    padding: 14px 14px;
+  }
+  .modal-activities__title {
+    font-size: 17px;
+  }
+  .modal-activities__detail,
+  .modal-activities__link {
+    font-size: 14px;
+  }
+  .modal-schedule__event {
+    grid-template-columns: 78px 1fr;
+    gap: 10px;
+  }
+  .modal-schedule__time,
+  .modal-schedule__event-text {
+    font-size: 15px;
+  }
+  .modal-schedule__note {
+    font-size: 13px;
   }
   .modal-button {
     align-self: center;
@@ -989,13 +1634,25 @@
   .modal-button::after {
     width: 18px;
   }
+  /* Registry on phone: keep the same tall-slip distribution as desktop
+     (title up top, lead + CTA distributed with breathing room below)
+     but shrink the body's min-height. The desktop 480px is fine when
+     the card is 640px wide, but on a ~340px-wide phone the same min
+     height makes the card noticeably taller than wide, which
+     stretches the space-around gaps into the stranded-chunks look
+     the original screenshot showed. ~400px lands the title / lead /
+     CTA at proportions much closer to the desktop reference. */
+  .modal-card--registry .modal-card__body {
+    min-height: min(400px, calc(100svh - 2 * var(--modal-gap)));
+  }
   .modal-close {
     /* Hit target stays 64x64 on phones — we deliberately don't shrink
        it. The visible X-icon shrinks slightly to keep the corner from
        looking crowded, but the tap zone remains the full square so
-       even imprecise thumb taps register. */
-    top: 6px;
-    right: 6px;
+       even imprecise thumb taps register. Top/right match the base
+       rule so the hit zone stays clear of the scrollbar gutter. */
+    top: 10px;
+    right: 14px;
     width: 64px;
     height: 64px;
   }
@@ -1007,26 +1664,21 @@
 
 /* Short viewport guard (e.g. phones in landscape). */
 @media (max-height: 480px) {
-  .modal-card__body {
-    padding: 22px 24px;
-    max-height: calc(100svh - 24px);
+  .modal-card {
+    --modal-gap: 12px;
+    --modal-pad: 22px;
   }
 }
 
-/* iPad + phone — keep the artwork's aspect ratio (no horizontal crop)
-   and size the modal to be the largest aspect-correct rectangle that
-   fits inside the viewport, leaving a tappable strip of backdrop
-   around it for dismiss-on-tap-outside. */
+/* iPad + phone — the base `.modal-card--lookbook` rule already sizes
+   itself off the shared `--modal-gap`, which scales down to 32px on
+   tablets and 16px on phones via the responsive blocks above, so we
+   don't need a separate width/height override here. We only nudge
+   the close button to clear any iOS notch / status bar. */
 @media (max-width: 1023px) {
   .modal-card.modal-card--lookbook {
-    width: min(92vw, calc(92svh * 814 / 1024));
-    max-width: 92vw;
-    height: auto;
-    aspect-ratio: 814 / 1024;
-    max-height: 92svh;
     border-radius: 16px;
   }
-  /* Nudge the close button below any iOS notch / status bar. */
   .modal-card--lookbook .modal-close {
     top: max(12px, env(safe-area-inset-top, 0px) + 4px);
     right: max(12px, env(safe-area-inset-right, 0px) + 4px);
