@@ -6,6 +6,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#fbf2dd" />
 
+    <!-- iOS Safari "Data Detectors" auto-wrap any plain-text address,
+         phone number, email, or date in a tappable link with default
+         link styling — that's the source of the unwanted underline
+         under the address on the intro overlay on iPhone. We disable
+         all four detectors at the page level so the parchment text
+         stays styled exactly as authored. (CSS belt-and-suspenders in
+         App.css forces text-decoration: none on any data-detector
+         link that does slip through.) -->
+    <meta name="format-detection" content="telephone=no, date=no, address=no, email=no" />
+
     <!-- Preconnect to Google Fonts so the TLS + DNS handshake overlaps with
          the HTML parse rather than serializing after it. `crossorigin` on
          the gstatic preconnect is required because the woff2 files are

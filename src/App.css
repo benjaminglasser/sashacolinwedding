@@ -444,6 +444,20 @@
   font-size: clamp(28px, 3.8vw, 42px);
 }
 
+/* iOS Safari Data Detectors fallback. Even with the page-level
+   format-detection meta tag (in index.html), older iOS versions still
+   wrap detected addresses/phones/dates in an `<a>` with the
+   `x-apple-data-detectors` attribute and apply their own link styling
+   (underline + system blue). Force-strip those styles on any descendant
+   of the intro card so the parchment text stays styled exactly as
+   authored even if a detector slips past the meta tag. */
+.intro__card a[x-apple-data-detectors],
+.intro__address a {
+  color: inherit;
+  text-decoration: none;
+  pointer-events: none;
+}
+
 /* Aubergine pill button — same CTA treatment as the modal-button used
    throughout the rest of the invitation (Zola RSVP, hotel booking,
    etc.) so the entry affordance reads as a deliberate, established
@@ -581,6 +595,20 @@
     max-width: 60%;
     height: 14px;
     margin-top: 18px;
+  }
+  /* Mobile-only step-down for the combined date + time line. The base
+     rule's `clamp(40px, …)` floor is sized for desktop/tablet — at
+     phone widths it makes the date row feel almost as heavy as the
+     names above. Drop the floor + tighten the gap + shrink the gold
+     diamond ornament so the row reads as a refined caption rather
+     than a second headline. */
+  .intro__date-line {
+    font-size: 30px;
+    gap: 4px 12px;
+  }
+  .intro__date-ornament {
+    width: 14px;
+    height: 14px;
   }
 }
 
