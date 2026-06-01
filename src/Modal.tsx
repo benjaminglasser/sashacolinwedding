@@ -20,7 +20,7 @@ const QUESTIONS_EMAIL = 'sashaandcolinwedding@gmail.com'
 
 const REGISTRY_URL = 'https://www.zola.com/registry/sashaandcolin2026'
 
-const HILTON_BLOCK_URL = 'https://group.hiltongardeninn.com/tljzn3'
+const HILTON_BLOCK_URL = 'https://group.hiltongardeninn.com/t1jzn3'
 
 type Stay = {
   eyebrow: string
@@ -110,7 +110,7 @@ const SCHEDULE: ScheduleDay[] = [
         description: 'Dinner is served.',
       },
       {
-        time: '10:00 pm',
+        time: '10:30 pm',
         description: 'Last call for valet. Feel free to stay longer and walk to your car.',
       },
     ],

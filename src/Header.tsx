@@ -1,7 +1,6 @@
 import { Fragment } from 'react'
 
-const RSVP_URL =
-  'https://docs.google.com/forms/d/e/1FAIpQLSe1PlE_EEnIuCpbl3960gXccqHtMkcKbEEjAQE3RAVWR3G0GQ/viewform'
+const RSVP_URL = 'https://www.zola.com/wedding/sashaandcolin2026/rsvp'
 
 const LINKS = [
   { label: 'RSVP', href: RSVP_URL, external: true },

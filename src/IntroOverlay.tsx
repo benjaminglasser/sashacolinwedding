@@ -40,7 +40,19 @@ export function IntroOverlay({ onEnter }: Props) {
     <div className={`intro${leaving ? ' intro--leaving' : ''}`} aria-hidden={leaving}>
       <div className="intro__card">
         <h1 className="intro__title">Sasha and Colin</h1>
-        <p className="intro__date">September 5th, 2026</p>
+        <p className="intro__date-line">
+          <span className="intro__date">September 5th, 2026</span>
+          {/* Gold star + sprig flourish — same ornament used between
+              header nav links and on the schedule modal's date row, so
+              the combined date+time reads as a single illuminated line. */}
+          <span className="intro__date-ornament" aria-hidden="true" />
+          <span className="intro__time">5:00p</span>
+        </p>
+        <p className="intro__address">
+          31515 Paseo Christina
+          <br />
+          San Juan Capistrano, CA 90026
+        </p>
         <button
           type="button"
           className="intro__enter"

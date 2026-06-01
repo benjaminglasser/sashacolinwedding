@@ -395,65 +395,181 @@
   background-size: contain;
 }
 
-.intro__date {
+.intro__date-line,
+.intro__address {
   font-family: var(--script);
   font-weight: 400;
-  font-size: clamp(26px, 3.6vw, 40px);
   color: #4a3140;
   margin: 0;
   opacity: 0.92;
+  line-height: 1.25;
+  text-align: center;
 }
 
+/* Combined date + time line. The two strings share a single row with a
+   gold star+sprig ornament between them, echoing the same flourish used
+   on the schedule modal's date row. Wraps gracefully on narrow viewports
+   so the ornament drops to the next line rather than overflowing. */
+.intro__date-line {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px clamp(16px, 2.2vw, 26px);
+  font-size: clamp(40px, 5.6vw, 64px);
+}
+
+.intro__date,
+.intro__time {
+  display: inline-block;
+}
+
+/* Lone gold diamond between the date and the time. Same four-pointed
+   star shape as the header / schedule ornaments, but with the flanking
+   sprigs stripped off so it reads as a single jewel between the two
+   strings. The viewBox tightens around just the diamond so the sized
+   span doesn't paint a stretched empty band on either side. */
+.intro__date-ornament {
+  flex: 0 0 auto;
+  width: clamp(18px, 2vw, 26px);
+  height: clamp(18px, 2vw, 26px);
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' fill='none'><path d='M4 0 L5.3 3 L8 4 L5.3 5 L4 8 L2.7 5 L0 4 L2.7 3 Z' fill='%23b88a47' stroke='none'/></svg>");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  opacity: 0.9;
+}
+
+.intro__address {
+  font-size: clamp(28px, 3.8vw, 42px);
+}
+
+/* Aubergine pill button — same CTA treatment as the modal-button used
+   throughout the rest of the invitation (Zola RSVP, hotel booking,
+   etc.) so the entry affordance reads as a deliberate, established
+   action rather than a passive piece of text. Gold inset ring echoes
+   the modal card outlines and parchment frames; gold star+sprig
+   bookends flanking the label tie back to the title flourishes. */
 .intro__enter {
   appearance: none;
-  background: transparent;
-  border: 0;
-  margin-top: 24px;
-  padding: 4px 10px 18px;
+  margin-top: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 14px 36px;
   font: inherit;
   font-family: var(--heading);
   font-style: italic;
-  font-size: clamp(22px, 2.1vw, 28px);
-  font-weight: 400;
-  letter-spacing: 0.005em;
-  text-transform: none;
-  color: #4a3140;
+  font-size: clamp(20px, 1.85vw, 24px);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: #f6e6c2;
+  background: linear-gradient(180deg, #3a1f42 0%, #2c1830 100%);
+  border: 1px solid rgba(184, 138, 71, 0.75);
+  outline: 1px solid rgba(184, 138, 71, 0.4);
+  outline-offset: -5px;
+  border-radius: 999px;
   cursor: pointer;
-  position: relative;
-  transition: color 220ms ease;
+  box-shadow:
+    0 8px 22px rgba(20, 10, 30, 0.32),
+    inset 0 1px 0 rgba(255, 226, 196, 0.08);
+  transition: color 220ms ease, border-color 220ms ease,
+    outline-color 220ms ease, box-shadow 220ms ease, transform 220ms ease;
+  /* After a 5s "look around the page" grace period, the button starts a
+     slow breathing gold halo to draw the visitor's eye back to the
+     primary affordance. The keyframes only add an outer gold glow on top
+     of the resting shadow stack — they don't touch transform, color, or
+     border — so the animation stays calm and doesn't compete with the
+     hover transition. Animation is paused/cleared on hover and focus
+     below, and disabled entirely under prefers-reduced-motion. */
+  animation: introEnterPulse 2600ms ease-in-out 5s infinite;
 }
 
-/* Same gold star + sprig flourish as the header links — hidden until
-   hover, then wipes in from the center via scaleX. Uses the deeper
-   gold tone so it registers against the parchment intro background. */
+/* Tiny gold star glyphs flanking the label, drawn from the same
+   flourish used on the modal CTAs. Sized small so they read as
+   decorative bookends rather than icons. */
+.intro__enter::before,
 .intro__enter::after {
   content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 10px;
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 10' preserveAspectRatio='none' fill='none' stroke='%23b88a47' stroke-linecap='round'><path d='M5 5 H38' stroke-width='1'/><path d='M62 5 H95' stroke-width='1'/><path d='M50 1.5 L51.6 4 L54 5 L51.6 6 L50 8.5 L48.4 6 L46 5 L48.4 4 Z' fill='%23b88a47' stroke='none'/><circle cx='42' cy='5' r='0.85' fill='%23b88a47' stroke='none'/><circle cx='58' cy='5' r='0.85' fill='%23b88a47' stroke='none'/></svg>");
+  width: 24px;
+  height: 11px;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 22 10' fill='none' stroke='%23d8a866' stroke-linecap='round'><path d='M2 5 H7' stroke-width='0.9'/><path d='M11 1.5 L12.6 4 L15 5 L12.6 6 L11 8.5 L9.4 6 L7 5 L9.4 4 Z' fill='%23d8a866' stroke='none'/><path d='M15 5 H20' stroke-width='0.9'/></svg>");
   background-repeat: no-repeat;
   background-position: center;
-  background-size: 100% 100%;
-  opacity: 0;
-  transform: scaleX(0);
-  transform-origin: 50% 50%;
-  transition: transform 320ms cubic-bezier(0.22, 0.61, 0.36, 1),
-    opacity 220ms ease;
+  background-size: contain;
+  flex: 0 0 auto;
+  transition: filter 220ms ease;
+}
+
+.intro__enter::after {
+  transform: scaleX(-1);
 }
 
 .intro__enter:hover,
 .intro__enter:focus-visible {
-  color: #2c1830;
-  outline: none;
+  /* Cancel the entice-pulse so the hover transition cleanly takes over
+     the box-shadow stack without fighting the keyframes. */
+  animation: none;
+  color: #fbf3df;
+  border-color: rgba(216, 168, 102, 0.95);
+  outline-color: rgba(216, 168, 102, 0.7);
+  box-shadow:
+    0 12px 28px rgba(20, 10, 30, 0.4),
+    inset 0 0 0 1px rgba(216, 168, 102, 0.55),
+    inset 0 0 18px rgba(216, 168, 102, 0.18);
+  transform: translateY(-1px);
 }
 
+.intro__enter:hover::before,
+.intro__enter:focus-visible::before,
 .intro__enter:hover::after,
 .intro__enter:focus-visible::after {
-  opacity: 1;
-  transform: scaleX(1);
+  filter: drop-shadow(0 0 4px rgba(216, 168, 102, 0.55));
+}
+
+.intro__enter:focus-visible {
+  outline: 2px solid rgba(216, 168, 102, 0.6);
+  outline-offset: 3px;
+}
+
+.intro__enter:active {
+  transform: translateY(0);
+  box-shadow:
+    0 4px 12px rgba(20, 10, 30, 0.38),
+    inset 0 1px 4px rgba(20, 10, 30, 0.32);
+}
+
+/* Slow breathing pulse — kicks in 5s after the intro mounts to draw the
+   eye back to the primary CTA if the visitor is still reading the
+   names/date. The button does three things together at the peak of each
+   beat so the motion actually reads on a warm parchment background:
+     1. lifts ~2px and scales up ~3% (gentle "I'm alive" cue),
+     2. blooms a vivid gold halo around the pill (matches the gold rings
+        used elsewhere in the invitation), and
+     3. brightens the inner highlight + drop shadow so the pill itself
+        feels lit from above.
+   The 0% / 100% frames match the resting style exactly so the animation
+   appears at the 5s mark without any pop. Cancelled on hover/focus by
+   the rules above so the hover transition takes over cleanly. */
+@keyframes introEnterPulse {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+    box-shadow:
+      0 8px 22px rgba(20, 10, 30, 0.32),
+      inset 0 1px 0 rgba(255, 226, 196, 0.08),
+      0 0 0 0 rgba(216, 168, 102, 0);
+  }
+  50% {
+    transform: translateY(-2px) scale(1.035);
+    box-shadow:
+      0 14px 32px rgba(20, 10, 30, 0.42),
+      inset 0 1px 0 rgba(255, 226, 196, 0.2),
+      0 0 36px 6px rgba(216, 168, 102, 0.72);
+  }
 }
 
 @media (max-width: 640px) {
@@ -577,6 +693,9 @@
   .intro--leaving {
     transition: opacity 200ms ease;
     transform: none;
+  }
+  .intro__enter {
+    animation: none;
   }
 }
 
@@ -867,12 +986,49 @@
   color: var(--modal-ink);
 }
 
-.modal-schedule__address,
+.modal-schedule__address {
+  font-family: var(--sans);
+  font-size: clamp(16px, 1.25vw, 19px);
+  line-height: 1.5;
+  color: var(--modal-ink-soft);
+}
+
 .modal-stays__address {
   font-family: var(--sans);
   font-size: clamp(14px, 1vw, 16px);
   line-height: 1.45;
   color: var(--modal-ink-soft);
+}
+
+/* Schedule date row — bigger combined date + start-time line with a
+   gold star+sprig ornament between them. Replaces the small eyebrow so
+   the day & arrival time read as the primary header for each schedule
+   card. Wraps gracefully on narrow viewports. */
+.modal-schedule__date-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  font-family: var(--heading);
+  font-style: italic;
+  font-weight: 700;
+  font-size: clamp(20px, 1.7vw, 26px);
+  letter-spacing: 0.02em;
+  color: #5a3214;
+  line-height: 1.15;
+}
+
+/* Tiny gold star + sprig ornament — same flourish used between the
+   header nav links, sized up a touch for the larger date/time text. */
+.modal-schedule__date-ornament {
+  flex: 0 0 auto;
+  width: 34px;
+  height: 11px;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 26 8' fill='none' stroke='%23b88a47' stroke-linecap='round'><path d='M2 4 H8' stroke-width='0.9'/><path d='M18 4 H24' stroke-width='0.9'/><path d='M13 0.6 L14.3 3 L16 4 L14.3 5 L13 7.4 L11.7 5 L10 4 L11.7 3 Z' fill='%23b88a47' stroke='none'/></svg>");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  opacity: 0.9;
 }
 
 /* Stays — accommodations card. Shares the parchment-card treatment with
@@ -1582,9 +1738,19 @@
   .modal-stays__venue-name {
     font-size: 17px;
   }
-  .modal-schedule__address,
+  .modal-schedule__address {
+    font-size: 16px;
+  }
   .modal-stays__address {
     font-size: 14px;
+  }
+  .modal-schedule__date-line {
+    font-size: 19px;
+    gap: 4px 10px;
+  }
+  .modal-schedule__date-ornament {
+    width: 28px;
+    height: 9px;
   }
   .modal-stays__phone,
   .modal-stays__detail {

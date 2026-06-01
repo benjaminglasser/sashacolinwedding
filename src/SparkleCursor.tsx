@@ -52,17 +52,19 @@ export function SparkleCursor() {
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     if (reduceMotion) return
 
-    // Touch-only devices don't have a hovering cursor to trail off of, and
-    // the click-burst alone isn't worth the cost of a perpetually running
-    // canvas + RAF loop + per-frame shadowBlur draw on the GPUs in these
-    // devices (the single most expensive 2D-canvas idiom we use). Skip the
-    // effect entirely so phones and tablets don't pay that tax.
+    // Touch-only devices don't have a hovering cursor to trail off of, so
+    // the sparkle trail is meaningless there — and a perpetually running
+    // canvas + RAF loop + per-frame shadowBlur is the single most
+    // expensive 2D-canvas idiom we use, which mobile GPUs / batteries
+    // should not pay for. So on touch we:
+    //   1. Skip the trail emitter entirely (no hover cursor anyway).
+    //   2. Idle the RAF loop when no particles are alive, and only kick
+    //      it back on at pointerdown for the tap burst.
     //
     // `(hover: none) and (pointer: coarse)` is the conservative both-sides
     // check that targets true touchscreens and excludes things like hybrid
     // laptops where the user is still moving a real cursor.
     const isTouch = window.matchMedia('(hover: none) and (pointer: coarse)').matches
-    if (isTouch) return
 
     const canvas = canvasRef.current
     if (!canvas) return
@@ -163,6 +165,9 @@ export function SparkleCursor() {
         pointer.seen = true
       }
       emitBurst(e.clientX, e.clientY)
+      // On touch, the RAF loop sleeps between taps to save battery —
+      // kick it back on so the burst we just emitted actually animates.
+      ensureRunning()
     }
 
     const onUp = (e: PointerEvent) => {
@@ -232,8 +237,10 @@ export function SparkleCursor() {
       const dts = dt / 1000
 
       // Sparkle trail: emit based on cursor velocity, with a small
-      // throttle so a frantic mouse doesn't flood the system.
-      if (pointer.seen && now - lastEmit > 14) {
+      // throttle so a frantic mouse doesn't flood the system. Skip
+      // entirely on touch — there's no hover cursor to trail, and
+      // dragging a finger should not paint a continuous sparkle stream.
+      if (!isTouch && pointer.seen && now - lastEmit > 14) {
         const dx = pointer.x - pointer.lastX
         const dy = pointer.y - pointer.lastY
         const dist = Math.hypot(dx, dy)
@@ -280,10 +287,27 @@ export function SparkleCursor() {
         drawSparkle(p.x, p.y, radius, p.color, a, p.rotation)
       }
 
+      // On touch, idle the loop once the last burst has fully died out
+      // so we're not running RAF + clearRect every frame for nothing.
+      // The next pointerdown will call ensureRunning() to wake it.
+      if (isTouch && particles.length === 0) {
+        rafId = null
+        lastFrame = null
+        return
+      }
+
       rafId = requestAnimationFrame(tick)
     }
 
-    rafId = requestAnimationFrame(tick)
+    const ensureRunning = () => {
+      if (rafId != null) return
+      lastFrame = null
+      rafId = requestAnimationFrame(tick)
+    }
+
+    // On desktop we want the trail responsive to the first mouse move,
+    // so start the loop immediately. On touch we wait for a tap.
+    if (!isTouch) rafId = requestAnimationFrame(tick)
 
     return () => {
       if (rafId != null) cancelAnimationFrame(rafId)
